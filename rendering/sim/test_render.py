@@ -10,6 +10,22 @@ from cocotb.utils import get_sim_time as gst
 from cocotb.runner import get_runner
 from PIL import Image
 import random 
+import numpy as np
+
+def float_to_binary_float16(float_num):
+    # Convert the float to a 16-bit float (half precision)
+    float16_value = np.float16(float_num)
+    
+    # Convert the 16-bit float to its binary representation
+    # np.float16() returns a numpy scalar, so we need to convert it to a binary string
+    binary_rep = format(float16_value.view(np.uint16), '016b')
+    print(float_num, binary_rep)
+    return int(binary_rep, 2)
+
+# Example usage
+float_num = 12.625
+binary_rep = float_to_binary_float16(float_num)
+print(binary_rep)
 
 
 async def reset(rst,clk):
@@ -22,26 +38,27 @@ async def reset(rst,clk):
 async def send_center(dut, x, y, radius): 
     await RisingEdge(dut.clk_in)
     dut.data_valid_in.value = 1 
-    dut.hcount_in.value = x
-    dut.vcount_in.value = y
-    dut.radius_in.value = radius
+    dut.f_x_in.value = x
+    dut.f_y_in.value = y
+    dut.f_z_in.value = 0
     await RisingEdge(dut.clk_in) 
     dut.data_valid_in.value = 0 
 
 async def check_pixels(dut, im_output): 
     while True: 
         await RisingEdge(dut.clk_in)
-        if(dut.data_valid_out.value == 1):
-            im_output.putpixel((dut.hcount_out.value,dut.vcount_out.value),(0, 0, dut.radius.value * 20))
-            print("PIXEL", dut.hcount_out.value, dut.vcount_out.value)
+        if(dut.new_pixel_out.value == 1):
+            im_output.putpixel((dut.rasterizer_hcount_out.value,dut.rasterizer_vcount_out.value),(0, 0, 200))
+            print(dut.rasterizer_hcount_out.value,dut.rasterizer_vcount_out.value)
+            print("PIXEL", dut.rasterizer_hcount_out.value, dut.rasterizer_vcount_out.value)
 
 async def send_data(dut, n): 
-    await send_center(dut, 20, 30, random.randint(4,8))
+    await send_center(dut, float_to_binary_float16(20), float_to_binary_float16(20), float_to_binary_float16(random.uniform(4,8)))
     for i in range (n): 
-        await RisingEdge(dut.ready_out)
-        center_x = random.randint(0, 320-8)
-        center_y = random.randint(0, 180-8)
-        await send_center(dut, center_x, center_y, random.randint(4,8))
+        await RisingEdge(dut.rasterizer_ready)
+        center_x = float_to_binary_float16(random.uniform(0, 320-8))
+        center_y = float_to_binary_float16(random.uniform(0, 180-8))
+        await send_center(dut, center_x, center_y, float_to_binary_float16(random.uniform(4,8)))
 
 @cocotb.test()
 async def test_painter(dut):
@@ -66,23 +83,29 @@ async def test_painter(dut):
     # await send_center(dut, 70, 70, 4)
 
     # await ClockCycles(dut.clk_in, 200)
-    im_output.save('outputPAINTER.png','PNG')
+    im_output.save('output_RENDER.png','PNG')
+    await ClockCycles(dut.clk_in, 400)
 
-def painter_runner():
+def render_runner():
     """Simulate the counter using the Python runner."""
     hdl_toplevel_lang = os.getenv("HDL_TOPLEVEL_LANG", "verilog")
     sim = os.getenv("SIM", "icarus")
 
     proj_path = Path(__file__).resolve().parent.parent
     sys.path.append(str(proj_path / "sim" / "model"))
-    sources = [proj_path / "hdl" / "painter.sv"]
+    sources = [proj_path / "hdl" / "render.sv"]
+    sources += [proj_path / "hdl" / "rasterizer.sv"]
+    sources += [proj_path / "hdl" / "projector.sv"]
+    sources += [proj_path / "hdl" / "painter.sv"]
+    sources += [proj_path / "hdl" / "pixel_manager.sv"]
+    sources += [proj_path / "hdl" / "float_to_int.sv"]
     build_test_args = ["-Wall"]
 
     sys.path.append(str(proj_path / "sim"))
     runner = get_runner(sim)
     runner.build(
         sources=sources,
-        hdl_toplevel="painter",
+        hdl_toplevel="render",
         always=True,
         build_args=build_test_args,
         parameters = {},
@@ -91,11 +114,11 @@ def painter_runner():
     )
     run_test_args = []
     runner.test(
-        hdl_toplevel="painter",
-        test_module="test_painter",
+        hdl_toplevel="render",
+        test_module="test_render",
         test_args=run_test_args,
         waves=True
     )
 
 if __name__ == "__main__":
-    painter_runner()
+    render_runner()

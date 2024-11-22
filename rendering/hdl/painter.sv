@@ -62,7 +62,7 @@ module painter (
       box_corner_x <= 0; 
       box_corner_y <= 0; 
       state <= IDLE; 
-      ready_out <= 0; 
+      ready_out <= 1; 
       next_pixel <= 0; 
 
     end else begin 
@@ -94,7 +94,7 @@ module painter (
             state <= IDLE; 
             ready_out <= 1; 
           end else begin 
-            
+
             if(next_pixel_pipe2) begin 
               if(current_hcount <= end_hcount - 1) begin 
                 current_hcount <= current_hcount + 1; 
