@@ -1,0 +1,11 @@
+# Ignore the build directory
+*.bit
+*.rpt
+*.wdf
+*.jou
+*.log
+*.txt
+
+simulator/sim/__pycache__
+simulator/sim/sim_build
+simulator/.Xil
