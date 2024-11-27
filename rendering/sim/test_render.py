@@ -47,7 +47,7 @@ async def send_center(dut, x, y, radius):
 async def check_pixels(dut, im_output): 
     while True: 
         await RisingEdge(dut.clk_in)
-        if(dut.new_pixel_out.value == 1):
+        if(dut.rasterizer_new_pixel_out.value == 1):
             im_output.putpixel((dut.rasterizer_hcount_out.value,dut.rasterizer_vcount_out.value),(0, 0, 200))
             print(dut.rasterizer_hcount_out.value,dut.rasterizer_vcount_out.value)
             print("PIXEL", dut.rasterizer_hcount_out.value, dut.rasterizer_vcount_out.value)
@@ -55,7 +55,7 @@ async def check_pixels(dut, im_output):
 async def send_data(dut, n): 
     await send_center(dut, float_to_binary_float16(20), float_to_binary_float16(20), float_to_binary_float16(random.uniform(4,8)))
     for i in range (n): 
-        await RisingEdge(dut.rasterizer_ready)
+        await RisingEdge(dut.render_ready)
         center_x = float_to_binary_float16(random.uniform(0, 320-8))
         center_y = float_to_binary_float16(random.uniform(0, 180-8))
         await send_center(dut, center_x, center_y, float_to_binary_float16(random.uniform(4,8)))
@@ -68,7 +68,7 @@ async def test_painter(dut):
     cocotb.start_soon(check_pixels(dut, im_output))
 
     await reset(dut.rst_in, dut.clk_in)
-    await send_data(dut, 50)
+    await send_data(dut, 20)
     # await send_center(dut, 20, 30, 6)
     
     # # create a blank image with dimensions (w,h)
@@ -84,7 +84,7 @@ async def test_painter(dut):
 
     # await ClockCycles(dut.clk_in, 200)
     im_output.save('output_RENDER.png','PNG')
-    await ClockCycles(dut.clk_in, 400)
+    # await Timer(10, "ms")
 
 def render_runner():
     """Simulate the counter using the Python runner."""
@@ -99,6 +99,9 @@ def render_runner():
     sources += [proj_path / "hdl" / "painter.sv"]
     sources += [proj_path / "hdl" / "pixel_manager.sv"]
     sources += [proj_path / "hdl" / "float_to_int.sv"]
+    sources += [proj_path / "hdl" / "video_sig_gen.sv"]
+    sources += [proj_path / "../simulator/hdl" / "binary16_multi.sv"]
+
     build_test_args = ["-Wall"]
 
     sys.path.append(str(proj_path / "sim"))

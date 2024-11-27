@@ -79,9 +79,6 @@ module rasterizer
         painter_ready <= 0; 
       end 
 
-
-      //
-
     end
   end
 

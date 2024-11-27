@@ -17,7 +17,7 @@ module pixel_manager
       if(data_valid_in) begin 
         data_valid_out <= 1;  
         color_out <= 16'b0000_0000_0001_1111; 
-        addr_out <= hcount_in + (vcount_out * 320);
+        addr_out <= hcount_in + (vcount_in * 320);
       end else begin 
         data_valid_out <= 0; 
       end 

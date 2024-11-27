@@ -31,6 +31,11 @@ module painter (
   logic next_pixel_pipe1; 
   logic next_pixel_pipe2; 
 
+  logic [15:0] curr_x_multi_result; 
+  logic [15:0] curr_y_multi_result; 
+  logic [15:0] radius_multi_result; 
+
+  logic start_multiply; 
 
   always_comb begin 
     curr_x = center_hcount > current_hcount ? center_hcount - current_hcount : current_hcount - center_hcount;
@@ -43,9 +48,18 @@ module painter (
     next_pixel_pipe2 <= next_pixel_pipe1; 
   end
 
+    //   input logic clk_in,
+    // input logic rst,
+    // input logic [15:0] a,
+    // input logic [15:0] b,
+    // input logic data_valid_in,
+    // output logic [15:0] result,
+    // output logic data_valid_out
+
   typedef enum {IDLE, PAINTING} paint_state;
 
   paint_state state; 
+  logic [15:0] paint_count; 
 
   always_ff @(posedge clk_in) begin 
 
@@ -64,6 +78,8 @@ module painter (
       state <= IDLE; 
       ready_out <= 1; 
       next_pixel <= 0; 
+      paint_count <= 0; 
+      start_multiply <= 0; 
 
     end else begin 
       case (state)  
@@ -86,16 +102,26 @@ module painter (
             end_vcount <= vcount_in + radius_in; 
             ready_out <= 0; 
             next_pixel <= 1; 
+            start_multiply <= 1; 
           end
         end
         PAINTING: begin 
-          
           if(current_vcount == end_vcount) begin 
             state <= IDLE; 
             ready_out <= 1; 
+            paint_count <= paint_count + 1; 
           end else begin 
 
             if(next_pixel_pipe2) begin 
+              //multiplies
+              if(curr_x*curr_x + curr_y*curr_y < radius*radius) begin 
+                data_valid_out <= 1; 
+                hcount_out <= current_hcount; 
+                vcount_out <= current_vcount; 
+              end
+
+              start_multiply <= 1; 
+
               if(current_hcount <= end_hcount - 1) begin 
                 current_hcount <= current_hcount + 1; 
               end else begin 
@@ -106,15 +132,11 @@ module painter (
               next_pixel <= 1; 
             end else begin 
               next_pixel <= 0; 
-            end
-
-            if(curr_x * curr_x + curr_y * curr_y < radius * radius) begin 
-              data_valid_out <= 1; 
-              hcount_out <= current_hcount; 
-              vcount_out <= current_vcount; 
-            end else begin 
               data_valid_out <= 0; 
+              start_multiply <= 0; 
             end 
+
+
 
           end
         end
