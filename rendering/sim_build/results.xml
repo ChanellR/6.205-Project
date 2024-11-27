@@ -1,0 +1,6 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1732486011" />
+    <testcase name="test_painter" classname="test_render" file="/Users/isaactaylor/VSCodeProjects/6205Project/6.205-Project/rendering/sim/test_render.py" lineno="63" time="0.42996788024902344" sim_time_ns="84460.001" ratio_time="196433.27997217726" />
+  </testsuite>
+</testsuites>
