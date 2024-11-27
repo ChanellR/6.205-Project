@@ -82,19 +82,20 @@ module top_level(
   //rendering module: hook up to particle buffer
   logic render_ready; 
   logic new_pixel_out; 
-  logic [15:0] color_out; 
+  logic [15:0] color_out, addr_out; 
 
   render rendering_inst(
     .clk_in(clk_pixel), 
     .rst_in(sys_rst), 
-    .f_x_in(), 
-    .f_y_in(), 
-    .f_z_in(), 
-    .data_valid_in(), 
-    .color_out(color_out), 
+    .f_x_in(16'h4000), 
+    .f_y_in(16'h4000), 
+    .f_z_in(16'h4000), 
+    .data_valid_in(1'b1), 
+    .addr_out(addr_out),
+    .render_color_out(color_out), 
     .render_new_pixel_out(new_pixel_out), 
     .render_ready(render_ready)
-  )
+  );
 
   logic active_draw_hdmi; 
   logic nf_hdmi; 
@@ -106,8 +107,8 @@ module top_level(
 
   video_sig_gen vsg
   (
-  .pixel_clk_in(clk_in),
-  .rst_in(rst_in),
+  .pixel_clk_in(clk_pixel),
+  .rst_in(sys_rst),
   .hcount_out(hcount_hdmi),
   .vcount_out(vcount_hdmi),
   .vs_out(vsync_hdmi),

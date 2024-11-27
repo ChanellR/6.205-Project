@@ -35,7 +35,7 @@ module painter (
   logic [15:0] curr_y_multi_result; 
   logic [15:0] radius_multi_result; 
 
-  logic start_multiply; 
+//   logic start_multiply; 
 
   always_comb begin 
     curr_x = center_hcount > current_hcount ? center_hcount - current_hcount : current_hcount - center_hcount;
@@ -43,9 +43,15 @@ module painter (
   end
 
   always_ff @(posedge clk_in) begin 
-    next_pixel_pipe <= next_pixel; 
-    next_pixel_pipe1 <= next_pixel_pipe; 
-    next_pixel_pipe2 <= next_pixel_pipe1; 
+    if (rst_in) begin
+      next_pixel_pipe <= 0; 
+      next_pixel_pipe1 <= 0; 
+      next_pixel_pipe2 <= 0; 
+    end else begin
+        next_pixel_pipe <= next_pixel; 
+        next_pixel_pipe1 <= next_pixel_pipe; 
+        next_pixel_pipe2 <= next_pixel_pipe1;
+    end
   end
 
     //   input logic clk_in,
@@ -79,16 +85,14 @@ module painter (
       ready_out <= 1; 
       next_pixel <= 0; 
       paint_count <= 0; 
-      start_multiply <= 0; 
+    //   start_multiply <= 0; 
 
     end else begin 
       case (state)  
         IDLE: begin 
           ready_out <= 1; 
           next_pixel <= 0; 
-          next_pixel_pipe <= 0; 
-          next_pixel_pipe1 <= 0; 
-          next_pixel_pipe2 <= 0; 
+
           if(data_valid_in) begin 
             state <= PAINTING; 
             current_hcount <= hcount_in - radius_in; 
@@ -102,7 +106,7 @@ module painter (
             end_vcount <= vcount_in + radius_in; 
             ready_out <= 0; 
             next_pixel <= 1; 
-            start_multiply <= 1; 
+            // start_multiply <= 1; 
           end
         end
         PAINTING: begin 
@@ -114,13 +118,17 @@ module painter (
 
             if(next_pixel_pipe2) begin 
               //multiplies
-              if(curr_x*curr_x + curr_y*curr_y < radius*radius) begin 
-                data_valid_out <= 1; 
-                hcount_out <= current_hcount; 
-                vcount_out <= current_vcount; 
-              end
+            //   if(curr_x*curr_x + curr_y*curr_y < radius*radius) begin 
+            //     data_valid_out <= 1; 
+            //     hcount_out <= current_hcount; 
+            //     vcount_out <= current_vcount; 
+            //   end
 
-              start_multiply <= 1; 
+            data_valid_out <= 1; 
+            hcount_out <= current_hcount; 
+            vcount_out <= current_vcount; 
+
+            //   start_multiply <= 1; 
 
               if(current_hcount <= end_hcount - 1) begin 
                 current_hcount <= current_hcount + 1; 
@@ -133,7 +141,7 @@ module painter (
             end else begin 
               next_pixel <= 0; 
               data_valid_out <= 0; 
-              start_multiply <= 0; 
+            //   start_multiply <= 0; 
             end 
 
 
