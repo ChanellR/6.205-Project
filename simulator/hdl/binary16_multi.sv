@@ -5,11 +5,14 @@ module binary16_multi (
     input logic [15:0] b,
     input logic data_valid_in,
     output logic [15:0] result,
-    output logic data_valid_out
+    output logic data_valid_out,
+    output logic busy
 );
     // 3 cycles to compute binary16 multiplication
     // Assuming everything is normalized
 
+    assign busy = |valid_pipe;
+    
     localparam stages = 3;
     logic [stages-1:0] valid_pipe;
     always_ff @( posedge clk_in ) begin
@@ -38,7 +41,8 @@ module binary16_multi (
             exp_a <= {exp_a[0], a[14:10]};
             exp_b <= {exp_b[0], b[14:10]};
             mant_product <= {1'b1, a[9:0]} * {1'b1, b[9:0]};
-            exp_sum <= a[14:10] + b[14:10] - 15; // Subtract bias
+            // extra normalization is done in the case of multuplying two subnormals
+            exp_sum <= (a[14:10] + b[14:10] > 15) ? a[14:10] + b[14:10] - 15 : 5'b0; // Subtract bias
         end
     end
 
@@ -56,7 +60,7 @@ module binary16_multi (
 
     // Handle special cases (zero, infinity, NaN)
     always_ff @( posedge clk_in ) begin
-        if (exp_a == 0 || exp_b == 0) begin
+        if (exp_a[1] == 0 || exp_b[1] == 0) begin
             result <= 16'b0; // Zero
         end else if (exp_a[1] == 31 || exp_b[1] == 31) begin
             result <= {sign_result_pipe[1], 5'b11111, 10'b0}; // Infinity

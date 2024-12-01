@@ -4,12 +4,15 @@ module binary16_sqrt (
     input logic [15:0] n,
     input logic data_valid_in,
     output logic [15:0] result,
-    output logic data_valid_out
+    output logic data_valid_out,
+    output logic busy
 );
 
     // Takes 13 cycles to compute binary16 sqrt
     //  fully pipelined
     // will return 0 if n is negative
+
+    // TODO: BUG with powers of 2, mantisssas because 0xfffff, instead of 0.
 
     // Define the floating-point format 
     logic [11:0] [21:0] x, c; //adding 10 precision bits
@@ -17,6 +20,8 @@ module binary16_sqrt (
     logic [11:0] [4:0] exp;
     logic [11:0] valid_pipe;
     logic [11:0] done;
+    
+    assign busy = |valid_pipe;
 
     always_ff @( posedge clk_in ) begin
         if (rst) begin
@@ -33,12 +38,27 @@ module binary16_sqrt (
                     x[0] <= {1'b1, n[9:0]} << 10; // 10 precision bits
                     // odd_exp <= 1;
                 end else begin
-                    exp[0] <= (n[14:10] >> 1) + 7;
-                    x[0] <= {1'b1, n[9:0]} << 11;
-                    // odd_exp <= 0;
+                    if (n == 16'b0) begin
+                        exp[0] <= 0;
+                        x[0] <= 0;
+                        c[0] <= 0;
+                        d[0] <= 0;
+                    end else begin
+                        exp[0] <= (n[14:10] >> 1) + 7;
+                        x[0] <= {1'b1, n[9:0]} << 11;
+                        // odd_exp <= 0;
+                    end
                 end
+                
                 c[0] <= 0;
-                d[0] <= 1 << 20;
+                done[0] <= 0;
+                // stub bug fix
+                if (n[9:0] == 10'b0) begin
+                    d[0] <= 0; // if the mantissa is 0, the extended form of the sqrt is just 1.0
+                end else begin
+                    d[0] <= 1 << 20;
+                end
+
             end else begin
                 exp[0] <= 0;
                 x[0] <= 0;
@@ -47,6 +67,8 @@ module binary16_sqrt (
             end
 
             for (int i = 1; i < 12; i++) begin
+                // the 4.0, 16.0 bug is because c differs by 1, and doesn't overflow
+                // https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Binary_numeral_system_(base_2)
                 if (d[i-1] != 0) begin
                     if (x[i-1] > d[i-1] && x[i-1] >= c[i-1] + d[i-1]) begin
                         x[i] <= x[i-1] - (c[i-1] + d[i-1]);

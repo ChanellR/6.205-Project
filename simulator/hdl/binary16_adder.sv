@@ -61,10 +61,15 @@ module binary16_adder (
         if (sign_a_store == sign_b_store) begin
             mant_sum_ext <= aligned_mant_a + aligned_mant_b;
             sign_sum <= sign_a_store;
+        end else if (aligned_mant_a == aligned_mant_b) begin
+            // If exps and mantissas are equal, and signs are different, result is 0
+            mant_sum_ext <= 0; 
+            exp_max_store <= 0;
+            sign_sum <= 1'b0;
         end else if (aligned_mant_a > aligned_mant_b) begin
             mant_sum_ext <= aligned_mant_a - aligned_mant_b;
             sign_sum <= sign_a_store;
-        end else begin
+        end else  begin
             mant_sum_ext <= aligned_mant_b - aligned_mant_a;
             sign_sum <= sign_b_store;
         end
