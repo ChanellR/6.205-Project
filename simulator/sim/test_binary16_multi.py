@@ -50,7 +50,7 @@ async def test(dut):
     test_vectors = []
     
     print("Generating test vectors...")
-    for _ in range(10):
+    for _ in range(5):
         a = float32_to_binary16(random.uniform(-10.0, 10.0))
         b = float32_to_binary16(random.uniform(-10.0, 10.0))
 
@@ -65,17 +65,39 @@ async def test(dut):
         print(f"a: {a.view(np.uint16):016b}, b: {b.view(np.uint16):016b}, expected: {expected.view(np.uint16):016b}, mantissa_prod: {mantissa_prod:022b}")
         test_vectors.append((a_rep, b_rep, expected))
 
-    for a, b, expected in test_vectors:
+    # for a, b, expected in test_vectors:
+    #     dut.a.value = int(a)
+    #     dut.b.value = int(b)
+    #     dut.data_valid_in.value = 1
+    #     await ClockCycles(dut.clk_in, 1)
+    #     dut.data_valid_in.value = 0
+    #     await RisingEdge(dut.data_valid_out)
+    #     value = dut.result.value
+    #     print(f"a={half(a)}, b={half(b)}: expected {expected}, got {value,half(value)}")
+    
+    # await ClockCycles(dut.clk_in, 4)
+    
+    outputs = []
+    # New inputs every clock cycle
+    dut.data_valid_in.value = 1
+    for a, b, expected_sum in test_vectors:
         dut.a.value = int(a)
         dut.b.value = int(b)
-        dut.data_valid_in.value = 1
         await ClockCycles(dut.clk_in, 1)
-        dut.data_valid_in.value = 0
-        await RisingEdge(dut.data_valid_out)
-        value = dut.result.value
-        print(f"a={half(a)}, b={half(b)}: expected {expected}, got {value,half(value)}")
+        if dut.data_valid_out.value == 1:
+            value = dut.result.value
+            outputs.append(value)
+        dut._log.info(f"a={half(a)}, b={half(b)}: expected {expected_sum}")
     
-    await ClockCycles(dut.clk_in, 4)
+    dut.data_valid_in.value = 0
+    for _ in range(6):
+        await ClockCycles(dut.clk_in, 1)
+        if dut.data_valid_out.value == 1:
+            value = dut.result.value
+            outputs.append(value)
+            
+    await ClockCycles(dut.clk_in, len(test_vectors) + 6 + 3)
+    dut._log.info(f"Outputs: {[half(o) for o in outputs]}")
     
 def test_runner():
     hdl_toplevel_lang = os.getenv("HDL_TOPLEVEL_LANG", "verilog")

@@ -8,69 +8,67 @@ module binary16_sqrt (
 );
 
     // Takes 13 cycles to compute binary16 sqrt
-    // Assumes postive input
+    //  fully pipelined
+    // will return 0 if n is negative
 
-    logic [21:0] x, c; //adding 10 precision bits
-    logic [20:0] d;
-    enum {IDLE, RESIZING, ACTIVE} state;
-    
     // Define the floating-point format 
-    // logic [4:0] cycle_count;
-    logic [4:0] exp;
-    logic odd_exp;
+    logic [11:0] [21:0] x, c; //adding 10 precision bits
+    logic [11:0] [20:0] d;
+    logic [11:0] [4:0] exp;
+    logic [11:0] valid_pipe;
+    logic [11:0] done;
 
-    always_ff @( posedge clk_in ) begin 
+    always_ff @( posedge clk_in ) begin
         if (rst) begin
-            state <= IDLE;
+            {x, c, d, exp} <= 0;
+            valid_pipe <= 0;
+            done <= 0;
         end else begin
-            case (state)
-                IDLE: begin
-                    data_valid_out <= 0;
-                    if (data_valid_in) begin
-                        if (n[14:10] & 1'b1) begin
-                            // incase information will be lost on right shift
-                            // add 1 to exponent and shift right mantissa
-                            exp <= ((n[14:10] + 1) >> 1) + 7;
-                            x <= {1'b1, n[9:0]} << 10; // 10 precision bits
-                            odd_exp <= 1;
-                        end else begin
-                            exp <= (n[14:10] >> 1) + 7;
-                            x <= {1'b1, n[9:0]} << 11;
-                            odd_exp <= 0;
-                        end
-                        c <= 0;
-                        d <= 1 << 20;
-                        state <= ACTIVE;
-                        // cycle_count <= 1;
-                    end
-                end 
-                RESIZING: begin
-                    if (d > x) begin
-                        d <= d >> 2;
-                    end else begin
-                        state <= ACTIVE;
-                    end
-                    // cycle_count <= cycle_count + 1;
+            valid_pipe <= {valid_pipe[10:0], data_valid_in};
+            if (data_valid_in && !n[15]) begin // if n is positive
+                if (n[14:10] & 1'b1) begin
+                    // incase information will be lost on right shift
+                    // add 1 to exponent and shift right mantissa
+                    exp[0] <= ((n[14:10] + 1) >> 1) + 7;
+                    x[0] <= {1'b1, n[9:0]} << 10; // 10 precision bits
+                    // odd_exp <= 1;
+                end else begin
+                    exp[0] <= (n[14:10] >> 1) + 7;
+                    x[0] <= {1'b1, n[9:0]} << 11;
+                    // odd_exp <= 0;
                 end
-                ACTIVE: begin
-                    // https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Binary_numeral_system_(base_2)
-                    if (d != 0) begin
-                        if (x >= c + d) begin
-                            x <= x - (c + d);
-                            c <= (c >> 1) + d;
-                        end else begin
-                            c <= c >> 1;
-                        end
-                        d <= d >> 2;
+                c[0] <= 0;
+                d[0] <= 1 << 20;
+            end else begin
+                exp[0] <= 0;
+                x[0] <= 0;
+                c[0] <= 0;
+                d[0] <= 0;
+            end
+
+            for (int i = 1; i < 12; i++) begin
+                if (d[i-1] != 0) begin
+                    if (x[i-1] > d[i-1] && x[i-1] >= c[i-1] + d[i-1]) begin
+                        x[i] <= x[i-1] - (c[i-1] + d[i-1]);
+                        c[i] <= (c[i-1] >> 1) + d[i-1];
                     end else begin
-                        result <= {1'b0, exp, c[9:0]};
-                        data_valid_out <= 1;
-                        state <= IDLE;
+                        x[i] <= x[i-1];
+                        c[i] <= c[i-1] >> 1;
                     end
-                    // cycle_count <= cycle_count + 1;
+                    d[i] <= d[i-1] >> 2;
+                    exp[i] <= exp[i-1];
+                    done[i] <= 0;
+                end else begin
+                    done[i] <= valid_pipe[i-1];
+                    exp[i] <= exp[i-1];
+                    x[i] <= x[i-1];
+                    c[i] <= c[i-1];
+                    d[i] <= d[i-1];
                 end
-                default: state <= IDLE; 
-            endcase
+            end
+
+            data_valid_out <= valid_pipe[11];
+            result <= {1'b0, exp[11], c[11][9:0]};
         end
     end
 

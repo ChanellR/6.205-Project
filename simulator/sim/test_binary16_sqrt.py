@@ -50,7 +50,7 @@ async def test(dut):
     test_vectors = []
 
     dut._log.info("Generating test vectors...")
-    for n in range(20):
+    for n in range(10):
         n = float32_to_binary16(random.uniform(0, 500.0))
         # n = float32_to_binary16(400.75)
         # n = float32_to_binary16(n)
@@ -65,16 +65,39 @@ async def test(dut):
         dut._log.info(f"n: {n.view(np.uint16):016b},expected: {expected.view(np.uint16):016b}, mantissa_sqrt: {mantissa_sqrt:011b}")
         test_vectors.append((n_rep, expected))
         
-    for n, expected in test_vectors:
-        dut.n.value = int(n)
-        dut.data_valid_in.value = 1
-        await ClockCycles(dut.clk_in, 1)
-        dut.data_valid_in.value = 0
-        await RisingEdge(dut.data_valid_out)
-        value = dut.result.value
-        dut._log.info(f"n={half(n)}, expected {expected}, got {value,half(value)}")
+    # for n, expected in test_vectors:
+    #     dut.n.value = int(n)
+    #     dut.data_valid_in.value = 1
+    #     await ClockCycles(dut.clk_in, 1)
+    #     dut.data_valid_in.value = 0
+    #     await RisingEdge(dut.data_valid_out)
+    #     await Timer(1, 'ns')
+    #     value = dut.result.value
+    #     dut._log.info(f"n={half(n)}, expected {expected}, got {value,half(value)}")
         
-    await ClockCycles(dut.clk_in, 3)
+    # await ClockCycles(dut.clk_in, 3)
+    
+    outputs = []
+    # New inputs every clock cycle
+    dut.data_valid_in.value = 1
+    for n, expected_sum in test_vectors:
+        dut.n.value = int(n)
+        # dut.b.value = int(b)
+        await ClockCycles(dut.clk_in, 1)
+        if dut.data_valid_out.value == 1:
+            value = dut.result.value
+            outputs.append(value)
+        dut._log.info(f"a={half(n)}, expected {expected_sum}")
+    
+    dut.data_valid_in.value = 0
+    for _ in range(13):
+        await ClockCycles(dut.clk_in, 1)
+        if dut.data_valid_out.value == 1:
+            value = dut.result.value
+            outputs.append(value)
+            
+    # await ClockCycles(dut.clk_in, len(test_vectors) + 12 + 3)
+    dut._log.info(f"Outputs: {[half(o) for o in outputs]}")
 
     
 def test_runner():

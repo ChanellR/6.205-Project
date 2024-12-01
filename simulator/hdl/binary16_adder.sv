@@ -1,15 +1,16 @@
 module binary16_adder (
-    input logic clk_in,
-    input logic rst,
-    input logic [15:0] a,
-    input logic [15:0] b,
-    input logic data_valid_in,
+    input wire clk_in,
+    input wire rst,
+    input wire [15:0] a,
+    input wire [15:0] b,
+    input wire data_valid_in,
     output logic [15:0] result,
-    output logic data_valid_out
+    output logic data_valid_out,
+    output logic busy
 );
     // 6 cycles to compute binary16 addition
     // Good resource on floating-point: https://pages.cs.wisc.edu/~markhill/cs354/Fall2008/notes/arith.flpt.html
-    // Assuming everything is normalized
+    // Assuming everything is normalized, and non zero
 
     // Internal signals
     logic [4:0] exp_a, exp_b, exp_max, exp_diff, exp_sum;
@@ -30,7 +31,7 @@ module binary16_adder (
     assign exp_b = b[14:10];
     assign mant_b = {1'b1, b[9:0]}; // Implicit leading 1 for normalized numbers
     
-    localparam stages = 6;
+    localparam stages = 4;
     logic [stages-1:0] valid_pipe;
     always_ff @( posedge clk_in ) begin
         if (rst) begin
@@ -40,43 +41,52 @@ module binary16_adder (
         end
     end
     assign data_valid_out = valid_pipe[stages-1];
+    assign busy = |valid_pipe;
     
+    logic sign_a_store, sign_b_store;
+    assign exp_diff = (exp_a > exp_b) ? (exp_a - exp_b) : (exp_b - exp_a);
     // Align exponents
     always_ff @( posedge clk_in ) begin
-        exp_diff <= (exp_a > exp_b) ? (exp_a - exp_b) : (exp_b - exp_a);
         exp_max <= (exp_a > exp_b) ? exp_a : exp_b;
         aligned_mant_a <= (exp_a > exp_b) ? mant_a : (mant_a >> exp_diff);
-        aligned_mant_b <= (exp_b > exp_a) ? mant_b : (mant_b >> exp_diff);        
+        aligned_mant_b <= (exp_b > exp_a) ? mant_b : (mant_b >> exp_diff);
+        sign_a_store <= sign_a;
+        sign_b_store <= sign_b;        
     end
 
+    logic [4:0] exp_max_store;
     // Add/subtract significands
     always_ff @( posedge clk_in ) begin
-        if (sign_a == sign_b) begin
+        exp_max_store <= exp_max;
+        if (sign_a_store == sign_b_store) begin
             mant_sum_ext <= aligned_mant_a + aligned_mant_b;
-            sign_sum <= sign_a;
+            sign_sum <= sign_a_store;
         end else if (aligned_mant_a > aligned_mant_b) begin
             mant_sum_ext <= aligned_mant_a - aligned_mant_b;
-            sign_sum <= sign_a;
+            sign_sum <= sign_a_store;
         end else begin
             mant_sum_ext <= aligned_mant_b - aligned_mant_a;
-            sign_sum <= sign_b;
+            sign_sum <= sign_b_store;
         end
     end
 
+    logic sign_sum_store;
     // Normalize result
     always_ff @( posedge clk_in ) begin
+        sign_sum_store <= sign_sum;
         if (mant_sum_ext[11]) begin
             mant_sum_norm <= mant_sum_ext[11:1];
-            exp_sum_adj <= exp_max + 1;
+            exp_sum_adj <= exp_max_store + 1;
         end else begin
             mant_sum_norm <= mant_sum_ext[10:0];
-            exp_sum_adj <= exp_max;
+            exp_sum_adj <= exp_max_store;
         end
     end
 
+    // TODO: This module might kill timing
     // Count leading zeros
-    always_ff @( posedge clk_in ) begin
-        leading_zeros <= (mant_sum_norm == 0) ? 0 :
+    // always_ff @( posedge clk_in ) begin
+    assign leading_zeros = (mant_sum_norm == 0) ? 0 :
                 (mant_sum_norm[10] == 1'b1) ? 0 :
                 (mant_sum_norm[9] == 1'b1) ? 1 :
                 (mant_sum_norm[8] == 1'b1) ? 2 :
@@ -88,15 +98,17 @@ module binary16_adder (
                 (mant_sum_norm[2] == 1'b1) ? 8 :
                 (mant_sum_norm[1] == 1'b1) ? 9 :
                 (mant_sum_norm[0] == 1'b1) ? 10 : 11;
-    end
+    // end
 
+    logic sign_final;
     // Adjust exponent and significand
     always_ff @( posedge clk_in ) begin
+        sign_final <= sign_sum_store;
         exp_sum <= exp_sum_adj - leading_zeros;
         mant_sum <= mant_sum_norm << leading_zeros;
     end
 
     // Assemble result
-    assign result = {sign_sum, exp_sum, mant_sum[9:0]};
+    assign result = (data_valid_out) ? {sign_final, exp_sum, mant_sum[9:0]} : 16'b0;
 
 endmodule
