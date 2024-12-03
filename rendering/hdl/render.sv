@@ -4,7 +4,9 @@
 module render 
   #(
     parameter WIDTH = 320,
-    parameter HEIGHT = 180 
+    parameter HEIGHT = 180, 
+    parameter BOUNDS_X = 10, 
+    parameter BOUNDS_Y = 10
   )(
     input wire clk_in, 
     input wire rst_in,
@@ -32,7 +34,11 @@ module render
   logic data_valid_out; 
 
   projector
-  #(.SPHERE_RADIUS(16'b0100_0101_0000_0000))
+  #(.SPHERE_RADIUS(16'b0100_0101_0000_0000), 
+  .WIDTH(WIDTH), 
+  .HEIGHT(HEIGHT), 
+  .BOUNDS_X(BOUNDS_X), 
+  .BOUNDS_Y(BOUNDS_Y))
   projector_inst (
     .clk_in(clk_in), 
     .rst_in(rst_in), 

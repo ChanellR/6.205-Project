@@ -18,7 +18,7 @@ module rasterizer
     output logic new_pixel_out,
     output logic ready_out
   );
-
+ 
   logic [15:0] f_current_center_x_pos;
   logic [15:0] f_current_center_y_pos;
   logic [15:0] f_current_center_depth;
