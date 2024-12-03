@@ -31,6 +31,10 @@ module painter (
   logic next_pixel_pipe1; 
   logic next_pixel_pipe2; 
 
+  logic [31:0] curr_x_2; 
+  logic [31:0] curr_y_2; 
+  logic [31:0] curr_radius_2; 
+
   logic [15:0] curr_x_multi_result; 
   logic [15:0] curr_y_multi_result; 
   logic [15:0] radius_multi_result; 
@@ -114,7 +118,7 @@ module painter (
 
             if(next_pixel_pipe2) begin 
               //multiplies
-              if(curr_x*curr_x + curr_y*curr_y < radius*radius) begin 
+              if(curr_x_2 + curr_y_2 < curr_radius_2) begin 
                 data_valid_out <= 1; 
                 hcount_out <= current_hcount; 
                 vcount_out <= current_vcount; 
@@ -131,13 +135,20 @@ module painter (
               end
               next_pixel <= 1; 
             end else begin 
+
+              if(next_pixel_pipe1) begin 
+                curr_radius_2 <= radius * radius; 
+              end else if(next_pixel_pipe) begin 
+                curr_y_2 <= curr_y * curr_y; 
+              end else if (next_pixel) begin 
+                curr_x_2 <= curr_x*curr_x; 
+              end
+
               next_pixel <= 0; 
               data_valid_out <= 0; 
               start_multiply <= 0; 
+              
             end 
-
-
-
           end
         end
 

@@ -12,8 +12,8 @@ module video_sig_gen
 (
   input wire pixel_clk_in,
   input wire rst_in,
-  output logic [$clog2(TOTAL_PIXELS)-1:0] hcount_out,
-  output logic [$clog2(TOTAL_LINES)-1:0] vcount_out,
+  output logic [10:0] hcount_out,
+  output logic [9:0] vcount_out,
   output logic vs_out, //vertical sync out
   output logic hs_out, //horizontal sync out
   output logic ad_out,

@@ -1,6 +1,10 @@
 module projector 
   #(
-    parameter SPHERE_RADIUS = 16'b0100_0101_0000_0000
+    parameter SPHERE_RADIUS = 16'b0100_0101_0000_0000, 
+    parameter WIDTH = 320, 
+    parameter HEIGHT = 180, 
+    parameter BOUNDS_X = 10, 
+    parameter BOUNDS_Y = 10
   )(
   input wire clk_in, 
   input wire rst_in, 

@@ -94,7 +94,7 @@ module top_level(
     .color_out(color_out), 
     .render_new_pixel_out(new_pixel_out), 
     .render_ready(render_ready)
-  )
+  ); 
 
   logic active_draw_hdmi; 
   logic nf_hdmi; 
