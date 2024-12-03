@@ -47,43 +47,36 @@ async def test(dut):
     await ClockCycles(dut.clk_in, 3)
     dut.rst.value = 0
     
-    # test_vectors = []
+    test_vectors = []
     
-    # print("Generating test vectors...")
-    # for _ in range(1):
-    #     # a = float32_to_binary16(random.uniform(-10.0, 10.0))
-    #     a = float32_to_binary16(2.0)
-    #     # b = float32_to_binary16(random.uniform(-10.0, 10.0))
-    #     b = float32_to_binary16(2.0)
+    print("Generating test vectors...")
+    for _ in range(5):
+        a = float32_to_binary16(random.uniform(-10.0, 10.0))
+        # a = float32_to_binary16(2.0)
+        b = float32_to_binary16(random.uniform(-10.0, 10.0))
+        # b = float32_to_binary16(2.0)
 
-    #     a_rep = eval(f"0b{a.view(np.uint16):016b}")
-    #     b_rep = eval(f"0b{b.view(np.uint16):016b}")
+        a_rep = eval(f"0b{a.view(np.uint16):016b}")
+        b_rep = eval(f"0b{b.view(np.uint16):016b}")
 
-    #     a_mantissa = a_rep & 0x3FF | 0x400
-    #     b_mantissa = b_rep & 0x3FF | 0x400
-    #     mantissa_quotient = (a_mantissa << 11) // b_mantissa
-    #     expected = a / b
+        a_mantissa = a_rep & 0x3FF | 0x400
+        b_mantissa = b_rep & 0x3FF | 0x400
+        mantissa_quotient = (a_mantissa << 11) // b_mantissa
+        expected = a / b
 
-    #     print(f"a: {a.view(np.uint16):016b}, b: {b.view(np.uint16):016b}, expected: {expected.view(np.uint16):016b}, mantissa_quotient: {mantissa_quotient:022b}")
-    #     test_vectors.append((a_rep, b_rep, expected))
+        print(f"a: {a.view(np.uint16):016b}, b: {b.view(np.uint16):016b}, expected: {expected.view(np.uint16):016b}, mantissa_quotient: {mantissa_quotient:022b}")
+        test_vectors.append((a_rep, b_rep, expected))
 
-    # for a, b, expected in test_vectors:
-    #     dut.a.value = int(a)
-    #     dut.b.value = int(b)
-    #     dut.data_valid_in.value = 1
-    #     await ClockCycles(dut.clk_in, 1)
-    #     dut.data_valid_in.value = 0
-    #     await RisingEdge(dut.data_valid_out)
-    #     value = dut.result.value
-    #     print(f"a={half(a)}, b={half(b)}: expected {expected}, got {value,half(value)}")
-
-    dut.a.value = 0x4800
-    dut.b.value = int(0x4000)
-    dut.data_valid_in.value = 1
+    for a, b, expected in test_vectors:
+        dut.a.value = int(a)
+        dut.b.value = int(b)
+        dut.data_valid_in.value = 1
+        await ClockCycles(dut.clk_in, 1)
+        dut.data_valid_in.value = 0
+        await RisingEdge(dut.data_valid_out)
+        value = dut.result.value
+        print(f"a={half(a)}, b={half(b)}: expected {expected}, got {value,half(value)}")
     
-    await with_timeout(RisingEdge(dut.data_valid_out),5000,'ns')
-    await ClockCycles(dut.clk_in, 4)
-    await with_timeout(RisingEdge(dut.data_valid_out),5000,'ns')
     await ClockCycles(dut.clk_in, 4)
     
 def test_runner():

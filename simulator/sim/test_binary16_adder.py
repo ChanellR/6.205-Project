@@ -11,6 +11,9 @@ from cocotb.utils import get_sim_time as gst
 from cocotb.runner import get_runner
 import numpy as np
 
+def rep(val):
+    return eval(f"0b{float32_to_binary16(val).view(np.uint16):016b}")
+
 def float32_to_binary16(val):
     """Convert a 32-bit floating point number to a binary16 value."""
     return np.float16(val)
@@ -53,11 +56,11 @@ async def test(dut):
     
     test_vectors = []
 
-    for _ in range(10):
+    for _ in range(6):
         a = float32_to_binary16(random.uniform(-10.0, 10.0))
         b = float32_to_binary16(random.uniform(-10.0, 10.0))
-        # a = float32_to_binary16(1.0)
-        # b = float32_to_binary16(-1.0)
+        # a = float32_to_binary16(0.0)
+        # b = float32_to_binary16(-0.0)
         a_rep = eval(f"0b{a.view(np.uint16):016b}")
         b_rep = eval(f"0b{b.view(np.uint16):016b}")
         expected_sum = a + b

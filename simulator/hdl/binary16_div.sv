@@ -1,3 +1,5 @@
+`default_nettype none // prevents system from inferring an undeclared logic (good practice)
+
 module binary16_div (
     input logic clk_in,
     input logic rst,
@@ -98,3 +100,5 @@ module binary16_div (
     assign result = {sign_result, exp_result, mant_result};
 
 endmodule
+
+`default_nettype wire

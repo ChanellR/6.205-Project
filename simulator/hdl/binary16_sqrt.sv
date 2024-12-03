@@ -12,8 +12,6 @@ module binary16_sqrt (
     //  fully pipelined
     // will return 0 if n is negative
 
-    // TODO: BUG with powers of 2, mantisssas because 0xfffff, instead of 0.
-
     // Define the floating-point format 
     logic [11:0] [21:0] x, c; //adding 10 precision bits
     logic [11:0] [20:0] d;
@@ -35,8 +33,7 @@ module binary16_sqrt (
                     // incase information will be lost on right shift
                     // add 1 to exponent and shift right mantissa
                     exp[0] <= ((n[14:10] + 1) >> 1) + 7;
-                    x[0] <= {1'b1, n[9:0]} << 10; // 10 precision bits
-                    // odd_exp <= 1;
+                    x[0] <= ({1'b1, n[9:0]} + 1) << 10; // 10 precision bits
                 end else begin
                     if (n == 16'b0) begin
                         exp[0] <= 0;
@@ -46,19 +43,12 @@ module binary16_sqrt (
                     end else begin
                         exp[0] <= (n[14:10] >> 1) + 7;
                         x[0] <= {1'b1, n[9:0]} << 11;
-                        // odd_exp <= 0;
                     end
                 end
                 
                 c[0] <= 0;
                 done[0] <= 0;
-                // stub bug fix
-                if (n[9:0] == 10'b0) begin
-                    d[0] <= 0; // if the mantissa is 0, the extended form of the sqrt is just 1.0
-                end else begin
-                    d[0] <= 1 << 20;
-                end
-
+                d[0] <= 1 << 20;
             end else begin
                 exp[0] <= 0;
                 x[0] <= 0;

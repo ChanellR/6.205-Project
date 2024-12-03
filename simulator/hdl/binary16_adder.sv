@@ -48,8 +48,17 @@ module binary16_adder (
     // Align exponents
     always_ff @( posedge clk_in ) begin
         exp_max <= (exp_a > exp_b) ? exp_a : exp_b;
-        aligned_mant_a <= (exp_a > exp_b) ? mant_a : (mant_a >> exp_diff);
-        aligned_mant_b <= (exp_b > exp_a) ? mant_b : (mant_b >> exp_diff);
+        if (a[14:0] == 15'b0) begin
+            aligned_mant_a <= 0;
+        end else begin
+            aligned_mant_a <= (exp_a > exp_b) ? mant_a : (mant_a >> exp_diff);
+        end
+        if (b[14:0] == 15'b0) begin
+            aligned_mant_b <= 0;
+        end else begin
+            aligned_mant_b <= (exp_b > exp_a) ? mant_b : (mant_b >> exp_diff);
+        end
+        // aligned_mant_b <= (exp_b > exp_a) ? mant_b : (mant_b >> exp_diff);
         sign_a_store <= sign_a;
         sign_b_store <= sign_b;        
     end
@@ -69,7 +78,7 @@ module binary16_adder (
         end else if (aligned_mant_a > aligned_mant_b) begin
             mant_sum_ext <= aligned_mant_a - aligned_mant_b;
             sign_sum <= sign_a_store;
-        end else  begin
+        end else begin
             mant_sum_ext <= aligned_mant_b - aligned_mant_a;
             sign_sum <= sign_b_store;
         end
