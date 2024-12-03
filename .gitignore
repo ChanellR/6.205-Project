@@ -5,7 +5,19 @@
 *.jou
 *.log
 *.txt
+*.dcp
+*.xml
+*.vvp
 
 simulator/sim/__pycache__
 simulator/sim/sim_build
 simulator/.Xil
+
+rendering/sim/__pycache__
+rendering/sim/sim_build
+rendering/.Xil
+
+integration
+integration/sim/__pycache__
+integration/sim/sim_build
+integration/.Xil
