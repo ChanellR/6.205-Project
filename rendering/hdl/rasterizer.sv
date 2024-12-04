@@ -29,16 +29,29 @@ module rasterizer
   logic [4:0] int_radius; 
 
   logic painter_ready;
+  logic x_ready; 
+  logic round_in; 
 
   float_to_int x_convert(
+    .clk_in(clk_in), 
+    .rst_in(rst_in),
+    .data_valid_in(round_in), 
     .f_value(f_current_center_x_pos),
-    .int_value(center_hcount)
+    .int_value(center_hcount), 
+    .data_valid_out(x_ready)
   );
+
   float_to_int y_convert(
+    .clk_in(clk_in), 
+    .rst_in(rst_in),
+    .data_valid_in(round_in), 
     .f_value(f_current_center_y_pos),
     .int_value(center_vcount)
   );
   float_to_int radius_convert(
+    .clk_in(clk_in), 
+    .rst_in(rst_in),
+    .data_valid_in(round_in), 
     .f_value(f_current_radius),
     .int_value(int_radius)
   );
@@ -74,6 +87,12 @@ module rasterizer
         f_current_center_x_pos <= f_center_x_pos; 
         f_current_center_y_pos <= f_center_y_pos; 
         f_current_radius <= f_radius; 
+        round_in <= 1; 
+      end else begin 
+        round_in <= 0; 
+      end 
+
+      if(x_ready) begin 
         painter_ready <= 1; 
       end else begin 
         painter_ready <= 0; 

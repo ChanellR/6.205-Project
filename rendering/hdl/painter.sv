@@ -46,12 +46,6 @@ module painter (
     curr_y = center_vcount > current_vcount ? center_vcount - current_vcount : current_vcount - center_vcount;    
   end
 
-  always_ff @(posedge clk_in) begin 
-    next_pixel_pipe <= next_pixel; 
-    next_pixel_pipe1 <= next_pixel_pipe; 
-    next_pixel_pipe2 <= next_pixel_pipe1; 
-  end
-
     //   input logic clk_in,
     // input logic rst,
     // input logic [15:0] a,
@@ -110,6 +104,11 @@ module painter (
           end
         end
         PAINTING: begin 
+
+          next_pixel_pipe <= next_pixel; 
+          next_pixel_pipe1 <= next_pixel_pipe; 
+          next_pixel_pipe2 <= next_pixel_pipe1; 
+
           if(current_vcount == end_vcount) begin 
             state <= IDLE; 
             ready_out <= 1; 
