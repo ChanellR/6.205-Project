@@ -100,7 +100,6 @@ module painter (
             end_vcount <= vcount_in + radius_in; 
             ready_out <= 0; 
             next_pixel <= 1; 
-            start_multiply <= 1; 
           end
         end
         PAINTING: begin 
@@ -123,8 +122,6 @@ module painter (
                 vcount_out <= current_vcount; 
               end
 
-              start_multiply <= 1; 
-
               if(current_hcount <= end_hcount - 1) begin 
                 current_hcount <= current_hcount + 1; 
               end else begin 
@@ -145,7 +142,6 @@ module painter (
 
               next_pixel <= 0; 
               data_valid_out <= 0; 
-              start_multiply <= 0; 
               
             end 
           end

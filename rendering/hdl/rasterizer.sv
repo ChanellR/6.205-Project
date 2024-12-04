@@ -32,29 +32,51 @@ module rasterizer
   logic x_ready; 
   logic round_in; 
 
-  float_to_int x_convert(
-    .clk_in(clk_in), 
-    .rst_in(rst_in),
-    .data_valid_in(round_in), 
-    .f_value(f_current_center_x_pos),
-    .int_value(center_hcount), 
-    .data_valid_out(x_ready)
-  );
+  logic [2:0] [15:0] normalized_position_result; 
+  logic [2:0] screen_coordinates_valid; 
+  logic [2:0] [31:0] screen_coordinates;
 
-  float_to_int y_convert(
-    .clk_in(clk_in), 
-    .rst_in(rst_in),
-    .data_valid_in(round_in), 
-    .f_value(f_current_center_y_pos),
-    .int_value(center_vcount)
-  );
-  float_to_int radius_convert(
-    .clk_in(clk_in), 
-    .rst_in(rst_in),
-    .data_valid_in(round_in), 
-    .f_value(f_current_radius),
-    .int_value(int_radius)
-  );
+  // float_to_int x_convert(
+  //   .clk_in(clk_in), 
+  //   .rst_in(rst_in),
+  //   .data_valid_in(round_in), 
+  //   .f_value(f_current_center_x_pos),
+  //   .int_value(center_hcount), 
+  //   .data_valid_out(x_ready)
+  // );
+  assign center_hcount = screen_coordinates[0]; 
+  assign center_vcount = screen_coordinates[1]; 
+  assign int_radius = screen_coordinates[2]; 
+
+
+  // float_to_int y_convert(
+  //   .clk_in(clk_in), 
+  //   .rst_in(rst_in),
+  //   .data_valid_in(round_in), 
+  //   .f_value(f_current_center_y_pos),
+  //   .int_value(center_vcount)
+  // );
+  // float_to_int radius_convert(
+  //   .clk_in(clk_in), 
+  //   .rst_in(rst_in),
+  //   .data_valid_in(round_in), 
+  //   .f_value(f_current_radius),
+  //   .int_value(int_radius)
+  // );
+
+  generate
+    genvar i;
+    for (i=0; i<3; i=i+1) begin
+      truncate_float float_to_int(
+        .clk_in(clk_in),
+        .rst(rst_in),
+        .f(normalized_position_result[i]),
+        .data_valid_in(round_in),
+        .result(screen_coordinates[i]),
+        .data_valid_out(screen_coordinates_valid[i])
+      );
+    end
+  endgenerate
 
   painter painter_inst(
     .clk_in(clk_in), 
@@ -83,16 +105,17 @@ module rasterizer
       //if good, send hcount, vcount of center to painter module 
       // replace depth buffer hcountvcount with new depth 
       if(data_valid_in) begin 
-        f_current_center_depth <= f_center_depth;
-        f_current_center_x_pos <= f_center_x_pos; 
-        f_current_center_y_pos <= f_center_y_pos; 
-        f_current_radius <= f_radius; 
+        
+        normalized_position_result[0] <= f_center_x_pos; 
+        normalized_position_result[1] <= f_center_y_pos; 
+        normalized_position_result[2] <= f_radius;
+
         round_in <= 1; 
       end else begin 
         round_in <= 0; 
       end 
 
-      if(x_ready) begin 
+      if(screen_coordinates_valid[0]) begin 
         painter_ready <= 1; 
       end else begin 
         painter_ready <= 0; 
