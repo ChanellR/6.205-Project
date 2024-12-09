@@ -1,3 +1,5 @@
+`default_nettype none // prevents system from inferring an undeclared logic (good practice)
+
 module binary16_adder (
     input wire clk_in,
     input wire rst,
@@ -126,3 +128,5 @@ module binary16_adder (
     assign result = (data_valid_out) ? {sign_final, exp_sum, mant_sum[9:0]} : 16'b0;
 
 endmodule
+
+`default_nettype wire

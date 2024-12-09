@@ -49,8 +49,18 @@ module binary16_div_pipelined (
     always_ff @(posedge clk_in)begin
         if (rst) begin
             valid_pipe <= 0;
-            exp_diff <= 0;
-            sign_result <= 0;
+            data_valid_out <= 0;
+            result <= 0;
+            // exp_diff <= 0;
+            // sign_result <= 0;
+            {final_sign, final_valid, final_exp, final_mant} <= 0;
+            for (int i=0; i<STAGES; i=i+1)begin
+                exp_diff[i] <= 0;
+                sign_result[i] <= 0;
+                dividend[i] <= 0;
+                divisor[i] <= 0;
+                p[i] <= 0;
+            end
         end else begin
             valid_pipe <= {valid_pipe[STAGES-2:0], data_valid_in};
             if (data_valid_in)begin

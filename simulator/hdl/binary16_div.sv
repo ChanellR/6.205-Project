@@ -1,11 +1,11 @@
 `default_nettype none // prevents system from inferring an undeclared logic (good practice)
 
 module binary16_div (
-    input logic clk_in,
-    input logic rst,
-    input logic [15:0] a, // 16-bit binary16 floating-point input a
-    input logic [15:0] b, // 16-bit binary16 floating-point input b
-    input logic data_valid_in,
+    input wire clk_in,
+    input wire rst,
+    input wire [15:0] a, // 16-bit binary16 floating-point input a
+    input wire [15:0] b, // 16-bit binary16 floating-point input b
+    input wire data_valid_in,
     output logic [15:0] result, // 16-bit binary16 floating-point result
     output logic data_valid_out
 );
@@ -41,6 +41,9 @@ module binary16_div (
             dividend <= 0;
             divisor <= 0;
             // cycle_count <= 0;
+            sign_result <= 0;
+            mant_result <= 0;
+            exp_result <= 0;
             data_valid_out <= 0;
             state <= IDLE;
         end else begin

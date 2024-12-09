@@ -56,14 +56,15 @@ async def test(dut):
     
     test_vectors = []
 
-    for _ in range(6):
+    for _ in range(5):
         a = float32_to_binary16(random.uniform(-10.0, 10.0))
         b = float32_to_binary16(random.uniform(-10.0, 10.0))
-        # a = float32_to_binary16(0.0)
-        # b = float32_to_binary16(-0.0)
+        # a = float32_to_binary16(3.1)
+        # b = float32_to_binary16(2.5)
         a_rep = eval(f"0b{a.view(np.uint16):016b}")
         b_rep = eval(f"0b{b.view(np.uint16):016b}")
         expected_sum = a + b
+        dut._log.info(f"a={hex(a.view(np.uint16))}, b={hex(b.view(np.uint16))}, res={hex(expected_sum.view(np.uint16))}")
         test_vectors.append((a_rep, b_rep, expected_sum))
 
     # New input after every completion

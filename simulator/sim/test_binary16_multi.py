@@ -53,7 +53,10 @@ async def test(dut):
     for _ in range(5):
         a = float32_to_binary16(random.uniform(-10.0, 10.0))
         b = float32_to_binary16(random.uniform(-10.0, 10.0))
-
+        # a = float32_to_binary16(3.1)
+        # b = float32_to_binary16(2.5)
+        # a = float32_to_binary16(-3.0)
+        # b = float32_to_binary16(-3.0)
         a_rep = eval(f"0b{a.view(np.uint16):016b}")
         b_rep = eval(f"0b{b.view(np.uint16):016b}")
 
@@ -62,7 +65,8 @@ async def test(dut):
         mantissa_prod = a_mantissa * b_mantissa
         expected = a * b
 
-        print(f"a: {a.view(np.uint16):016b}, b: {b.view(np.uint16):016b}, expected: {expected.view(np.uint16):016b}, mantissa_prod: {mantissa_prod:022b}")
+        dut._log.info(f"a={hex(a.view(np.uint16))}, b={hex(b.view(np.uint16))}, res={hex(expected.view(np.uint16))}")
+        dut._log.info(f"a: {a.view(np.uint16):016b}, b: {b.view(np.uint16):016b}, expected: {expected.view(np.uint16):016b}, mantissa_prod: {mantissa_prod:022b}")
         test_vectors.append((a_rep, b_rep, expected))
 
     # for a, b, expected in test_vectors:
@@ -90,14 +94,14 @@ async def test(dut):
         dut._log.info(f"a={half(a)}, b={half(b)}: expected {expected_sum}")
     
     dut.data_valid_in.value = 0
-    for _ in range(6):
+    for _ in range(10):
         await ClockCycles(dut.clk_in, 1)
         if dut.data_valid_out.value == 1:
             value = dut.result.value
             outputs.append(value)
             
     await ClockCycles(dut.clk_in, len(test_vectors) + 6 + 3)
-    dut._log.info(f"Outputs: {[half(o) for o in outputs]}")
+    dut._log.info(f"Outputs: {[(half(o), hex(int(o))) for o in outputs]}")
     
 def test_runner():
     hdl_toplevel_lang = os.getenv("HDL_TOPLEVEL_LANG", "verilog")

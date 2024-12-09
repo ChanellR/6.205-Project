@@ -1,8 +1,10 @@
+`default_nettype none // prevents system from inferring an undeclared logic (good practice)
+
 module binary16_sqrt (
-    input logic clk_in,
-    input logic rst,
-    input logic [15:0] n,
-    input logic data_valid_in,
+    input wire clk_in,
+    input wire rst,
+    input wire [15:0] n,
+    input wire data_valid_in,
     output logic [15:0] result,
     output logic data_valid_out,
     output logic busy
@@ -85,3 +87,5 @@ module binary16_sqrt (
     end
 
 endmodule
+
+`default_nettype wire
