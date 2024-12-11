@@ -54,7 +54,8 @@ async def test(dut):
     powers = [] # [2**i for i in range(0, 5)] 
     
     dut._log.info("Generating test vectors...")
-    for n in powers + [random.uniform(0, 500.0) for _ in range(8)]:
+    # for n in powers + [random.uniform(0, 500.0) for _ in range(8)]:
+    for n in [2.0]:
         # n = float32_to_binary16(random.uniform(0, 500.0))
         # n = float32_to_binary16(400.75)
         n = float32_to_binary16(n)

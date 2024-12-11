@@ -1,4 +1,3 @@
-`default_nettype none // prevents system from inferring an undeclared logic (good practice)
 
 
 //  Xilinx True Dual Port RAM, Read First, Dual Clock
@@ -10,7 +9,7 @@
 //  If a reset or enable is not necessary, it may be tied off or removed from the code.
 
 module particle_buffer #(
-    parameter RAM_WIDTH = 18,                       // Specify RAM data width
+    parameter RAM_WIDTH = 16*2,                       // Specify RAM data width
     parameter RAM_DEPTH = 1024,                     // Specify RAM depth (number of entries)
     parameter RAM_PERFORMANCE = "HIGH_PERFORMANCE", // Select "HIGH_PERFORMANCE" or "LOW_LATENCY"
     parameter INIT_FILE = ""                        // Specify name/location of RAM initialization file if using one (leave blank if not)
@@ -30,19 +29,20 @@ module particle_buffer #(
     input regcea,                         // Port A output register enable
     input regceb,                         // Port B output register enable
     output [RAM_WIDTH-1:0] douta,         // Port A RAM output data
-    output [RAM_WIDTH-1:0] doutb,          // Port B RAM output data
-    input clkc,
-    input stream,
-    output [clogb2(RAM_DEPTH-1)-1:0] addrc,
-    output [RAM_WIDTH-1:0] doutc
+    output [RAM_WIDTH-1:0] doutb          // Port B RAM output data
+    // input clkc,
+    // input stream,
+    // output [clogb2(RAM_DEPTH-1)-1:0] addrc,
+    // output [RAM_WIDTH-1:0] doutc
   );
   
     reg [RAM_WIDTH-1:0] BRAM [RAM_DEPTH-1:0];
+    // reg [RAM_WIDTH-1:0] next_positions [RAM_DEPTH-1:0];
     reg [RAM_WIDTH-1:0] ram_data_a = {RAM_WIDTH{1'b0}};
     reg [RAM_WIDTH-1:0] ram_data_b = {RAM_WIDTH{1'b0}};
 
-    reg [clogb2(RAM_DEPTH-1)-1:0] current_addrc = {clogb2(RAM_DEPTH-1){1'b0}};
-    reg [RAM_WIDTH-1:0] ram_data_c = {RAM_WIDTH{1'b0}};
+    // reg [clogb2(RAM_DEPTH-1)-1:0] current_addrc = {clogb2(RAM_DEPTH-1){1'b0}};
+    // reg [RAM_WIDTH-1:0] ram_data_c = {RAM_WIDTH{1'b0}};
 
     //this loop below allows for rendering with iverilog simulations!
     /*
@@ -73,27 +73,29 @@ module particle_buffer #(
     end
     always @(posedge clka)
       if (ena) begin
-        if (wea)
+        if (wea) begin
           BRAM[addra] <= dina;
+        end
         ram_data_a <= BRAM[addra];
       end
   
     always @(posedge clkb)
       if (enb) begin
         if (web)
+          // Can't write from the particle updater to the raw buffer, only swapping on new_frame
           BRAM[addrb] <= dinb;
         ram_data_b <= BRAM[addrb];
       end
 
-    always @(posedge clkc) begin
-      if (stream) begin
-        ram_data_c <= BRAM[current_addrc];
-        if (current_addrc == RAM_DEPTH - 1)
-          current_addrc <= 0;
-        else
-          current_addrc <= current_addrc + 1;
-      end
-    end
+    // always @(posedge clkc) begin
+    //   if (stream) begin
+    //     ram_data_c <= BRAM[current_addrc];
+    //     if (current_addrc == RAM_DEPTH - 1)
+    //       current_addrc <= 0;
+    //     else
+    //       current_addrc <= current_addrc + 1;
+    //   end
+    // end
   
     //  The following code generates HIGH_PERFORMANCE (use output register) or LOW_LATENCY (no output register)
     generate
@@ -102,8 +104,8 @@ module particle_buffer #(
         // The following is a 1 clock cycle read latency at the cost of a longer clock-to-out timing
          assign douta = ram_data_a;
          assign doutb = ram_data_b;
-         assign doutc = ram_data_c;
-         assign addrc = current_addrc;
+        //  assign doutc = ram_data_c;
+        //  assign addrc = current_addrc;
   
       end else begin: output_register
   
@@ -111,8 +113,8 @@ module particle_buffer #(
   
         reg [RAM_WIDTH-1:0] douta_reg = {RAM_WIDTH{1'b0}};
         reg [RAM_WIDTH-1:0] doutb_reg = {RAM_WIDTH{1'b0}};
-        reg [RAM_WIDTH-1:0] doutc_reg = {RAM_WIDTH{1'b0}};
-        reg [clogb2(RAM_DEPTH-1)-1:0] current_addrc_reg = {clogb2(RAM_DEPTH-1){1'b0}};
+        // reg [RAM_WIDTH-1:0] doutc_reg = {RAM_WIDTH{1'b0}};
+        // reg [clogb2(RAM_DEPTH-1)-1:0] current_addrc_reg = {clogb2(RAM_DEPTH-1){1'b0}};
   
         always @(posedge clka)
           if (rsta)
@@ -126,16 +128,16 @@ module particle_buffer #(
           else if (regceb)
             doutb_reg <= ram_data_b;
 
-        always @(posedge clkc)
-          if (stream) begin
-            doutc_reg <= ram_data_c;
-            current_addrc_reg <= current_addrc;
-          end
+        // always @(posedge clkc)
+        //   if (stream) begin
+        //     doutc_reg <= ram_data_c;
+        //     current_addrc_reg <= current_addrc;
+        //   end
   
         assign douta = douta_reg;
         assign doutb = doutb_reg;
-        assign doutc = doutc_reg;
-        assign addrc = current_addrc_reg;
+        // assign doutc = doutc_reg;
+        // assign addrc = current_addrc_reg;
 
       end
     endgenerate
