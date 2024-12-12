@@ -1,6 +1,4 @@
 # WATER WORKS
 
-We should seperate the two larger parts into different modules. 
-
-## Plan
-    1. Ensure data rate transfer capability
+Source code for project demonstration is within the integration folder. 
+Further rendering code is on isaac_branch. 
