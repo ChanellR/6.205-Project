@@ -5,11 +5,11 @@ module calc_density #(
    parameter PARTICLE_COUNTER_SIZE = 2,
    parameter H = 16'h4400 // 16'b0_01111_0000000000 // 1.0
 ) (
-    input logic clk_in,
-    input logic rst,
-    input logic [15:0] r_i,
-    input logic [15:0] r_j,
-    input logic data_valid_in,
+    input wire clk_in,
+    input wire rst,
+    input wire [15:0] r_i,
+    input wire [15:0] r_j,
+    input wire data_valid_in,
     output logic [15:0] result,
     output logic data_valid_out,
     output logic busy

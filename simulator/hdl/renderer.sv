@@ -44,44 +44,167 @@ module renderer #(
     .fc_out(frame_count)
   );
 
-  // TODO: TESTING
-  logic [DIMS-1:0] [15:0] test_position = 32'h4000_4000; // (2.0, 2.0) centered
-  logic [DIMS-1:0] [31:0] transformed_position; // (320/2, 180/2) centered_on_screen
-  logic valid_screen_coordinates;
+  // // TODO: TESTING
+  // logic [DIMS-1:0] [15:0] test_position = 32'h4000_4000; // (2.0, 2.0) centered
+  // logic [DIMS-1:0] [31:0] transformed_position; // (320/2, 180/2) centered_on_screen
+  // logic valid_screen_coordinates;
 
-  // Transform binary16 float positions to the screen space for rendering 2D
-  transform_position #(
-    .DIMS(DIMS),
-    .TWICE_BOUNDS(TWICE_BOUNDS),
-    .SCREEN_BOUNDS(SCREEN_BOUNDS),
-    .HALF_SCREEN_BOUNDS(HALF_SCREEN_BOUNDS)
-  ) tp (
-    .clk_in(clk_pixel),
-    .rst(rst_in),
-    .f(particle_position),
-    // .f(test_position),
-    // .data_valid_in(hcount == 0 && vcount == 0),
+  // // Transform binary16 float positions to the screen space for rendering 2D
+  // transform_position #(
+  //   .DIMS(DIMS),
+  //   .TWICE_BOUNDS(TWICE_BOUNDS),
+  //   .SCREEN_BOUNDS(SCREEN_BOUNDS),
+  //   .HALF_SCREEN_BOUNDS(HALF_SCREEN_BOUNDS)
+  // ) tp (
+  //   .clk_in(clk_pixel),
+  //   .rst(rst_in),
+  //   .f(particle_position),
+  //   // .f(test_position),
+  //   // .data_valid_in(hcount == 0 && vcount == 0),
+  //   .data_valid_in(data_valid_in),
+  //   .result(transformed_position),
+  //   .data_valid_out(valid_screen_coordinates)
+  // );
+    //rendering module: hook up to particle buffer
+  // logic [NUM_INST-1:0] p_render_ready; 
+  // logic [NUM_INST-1:0] new_pixel_out; 
+  // logic [NUM_INST-1:0][15:0] color_out; 
+  // logic [NUM_INST-1:0][15:0] addr_out; 
+
+  // logic render_ready; 
+  // assign render_ready = |p_render_ready; 
+
+  // logic [15:0] f_x_in; 
+  // logic [15:0] f_y_in; 
+  // logic [15:0] f_z_in; 
+
+  // logic fifo_valid_out; 
+  // logic [47:0] fifo_out; 
+  // logic [47:0] buffer_out; 
+  // logic full_out; 
+  // // logic [$clog2(NUM_INST)-1:0] bus_driver_ix; 
+
+  // fifo #(
+  //   .DATA_WIDTH(48),
+  //   .NUM_SLOTS(5)
+  // )particle_fifo(
+  //   .clk_in(clk_pixel),
+  //   .rst_in(sys_rst), 
+  //   .data_valid_in(data_valid_in),
+  //   .receiver_ready(render_ready),
+  //   .data_line(particle_position),
+  //   .data_out(fifo_out),
+  //   .full_out(full_out),
+  //   .data_valid_out(fifo_valid_out)
+  // );
+
+  // bus_driver #(
+  //   .NUM_OUTPUTS(NUM_INST), 
+  //   .DATA_WIDTH(48)
+  // )
+  // particle_buffer_interface (
+  //   .clk_in(clk_pixel), 
+  //   .rst_in(sys_rst), 
+  //   .data_valid_in(fifo_valid_out), 
+  //   .data_line(fifo_out),
+  //   .output_array(coords_out), 
+  //   .valid_outputs(valid_outputs)
+  // );
+
+  // logic [NUM_INST-1:0] valid_outputs; 
+  // logic [NUM_INST-1:0][2:0][15:0] coords_out;
+
+  // logic [NUM_INST-1:0][15:0] render_f_x_in; 
+  // logic [NUM_INST-1:0][15:0] render_f_y_in; 
+  // logic [NUM_INST-1:0][15:0] render_f_z_in;
+
+  // logic send_render;  
+  // logic [NUM_INST-1:0][1:0][15:0] output_array;
+
+  // generate 
+  //   genvar i; 
+    
+  //   for (i = 0; i<NUM_INST; i=i+1) begin 
+  //     render rendering_inst(
+  //       .clk_in(clk_pixel), 
+  //       .rst_in(sys_rst), 
+  //       .f_x_in(coords_out[i][0]), 
+  //       .f_y_in(coords_out[i][1]), 
+  //       .f_z_in(coords_out[i][2]), 
+  //       .data_valid_in(valid_outputs[i]),
+  //       .render_color_out(output_array[i][0]), 
+  //       .render_new_pixel_out(new_pixel_out[i]), 
+  //       .render_ready(p_render_ready[i]), 
+  //       .addr_out(output_array[i][1]) 
+  //     ); 
+  //   end
+  // endgenerate
+
+  // logic [1:0][15:0] arbiter_out;
+  // logic render_pixel_out; 
+
+  // arbiter  #(
+  //   .DATA_WIDTH(32), 
+  //   .NUM_INPUTS(NUM_INST)
+  // ) render_arbiter(
+  //   .clk_in(clk_pixel), 
+  //   .rst_in(sys_rst), 
+  //   .data_line(output_array), 
+  //   .valid_array(new_pixel_out), 
+  //   .data_out(arbiter_out), 
+  //   .data_valid_out(render_pixel_out)
+  // );
+  logic render_ready; 
+  logic new_pixel_out; 
+  logic [15:0] color_out; 
+  logic [15:0] addra; 
+  // logic [47:0] buffer_out; 
+
+  // particle_buffer pb(
+  //   .clk_in(clk_pixel), 
+  //   .rst_in(sys_rst), 
+  //   .busy(~render_ready),
+  //   .p_out(buffer_out), 
+  //   .p_valid_out(send_render)
+  // );
+
+  logic send_render;  
+
+  render rendering_inst(
+    .clk_in(clk_pixel), 
+    .rst_in(rst_in), 
+    .f_x_in(particle_position[0]), 
+    .f_y_in(particle_position[1]), 
+    .f_z_in(0), 
     .data_valid_in(data_valid_in),
-    .result(transformed_position),
-    .data_valid_out(valid_screen_coordinates)
-  );
-  
-  logic [15:0] addra, color_out;
-  logic new_pixel_out;
-  always_ff @( posedge clk_pixel ) begin : paste_particle
-    if (rst_in) begin
-      addra <= 0;
-      color_out <= 0;
-    end else begin
-      addra <= transformed_position[1] + 320 * transformed_position[0];
-      new_pixel_out <= valid_screen_coordinates;
-      if (clearing_frame) begin
-        color_out <= {5'h1F, 6'h0, 5'h0};
-      end else begin
-        color_out <= {5'h0, 6'h0, 5'h1F};
-      end
-    end
-  end
+    .render_color_out(color_out), 
+    .render_new_pixel_out(new_pixel_out), 
+    .render_ready(render_ready), 
+    .addr_out(addra)
+  ); 
+
+
+  // logic [15:0] render_color_out;
+  // logic [15:0] render_addr_out; 
+  // assign render_color_out = arbiter_out[0];
+  // assign render_addr_out = arbiter_out[1]; 
+
+  // logic [15:0] addra, color_out;
+  // logic new_pixel_out;
+  // always_ff @( posedge clk_pixel ) begin : paste_particle
+  //   if (rst_in) begin
+  //     addra <= 0;
+  //     color_out <= 0;
+  //   end else begin
+  //     addra <= transformed_position[1] + 320 * transformed_position[0];
+  //     new_pixel_out <= valid_screen_coordinates;
+  //     if (clearing_frame) begin
+  //       color_out <= {5'h1F, 6'h0, 5'h0};
+  //     end else begin
+  //       color_out <= {5'h0, 6'h0, 5'h1F};
+  //     end
+  //   end
+  // end
 
   logic clearing_frame; 
   logic clearing_frame2; 
