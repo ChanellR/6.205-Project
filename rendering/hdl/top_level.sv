@@ -4165,13 +4165,11 @@ module top_level(
     .addr_out(addr_out)
   ); 
 
-  logic active_draw_hdmi; 
-  logic nf_hdmi; 
-  logic [5:0] frame_count_hdmi; 
-  logic vsync_hdmi; 
-  logic hsync_hdmi; 
-  logic [10:0] hcount_hdmi; 
-  logic [9:0] vcount_hdmi; 
+  // down scaled 1280x720 by 4 to 320x180
+  localparam DIMS = 2;
+  localparam TWICE_BOUNDS = 32'h4c004c00; // (8*2, 8*2)
+  localparam SCREEN_BOUNDS = 32'h5D0059A0; // (320, 180)
+  localparam HALF_SCREEN_BOUNDS = 32'h590055A0; // (320/2, 180/2)
 
   video_sig_gen vsg
   (
@@ -4209,6 +4207,8 @@ module top_level(
     end
   end 
 
+  logic good_add_pipe1; 
+  logic good_add_pipe2; 
   logic [7:0] fb_red, fb_green, fb_blue;
   always_ff @(posedge clk_pixel)begin
     fb_red <= good_add_pipe2?{fb_out[15:11],3'b0}:8'b0;
@@ -4216,11 +4216,14 @@ module top_level(
     fb_blue <= good_add_pipe2?{fb_out[4:0],3'b0}:8'b0;
   end
 
-  logic good_add_pipe1; 
-  logic good_add_pipe2; 
-
   always_ff @(posedge clk_pixel) begin
-    good_addrb <= (hcount_hdmi<320)&&(vcount_hdmi<180);
+    if (~sw[0]) begin // scaling
+      good_addrb <= (hcount<320)&&(vcount<180);
+      addrb <= hcount + 320 * vcount;
+    end else begin
+      good_addrb <= (hcount<320*4)&&(vcount<180*4);
+      addrb <= ((hcount) >> 2) + 320*(vcount >> 2); 
+    end
     good_add_pipe1 <= good_addrb; 
     good_add_pipe2 <= good_add_pipe1; 
     addrb <= (hcount_hdmi) + 320*vcount_hdmi;
@@ -4326,7 +4329,6 @@ module top_level(
       .tmds_out(tmds_10b[0]));
  
   //three tmds_serializers (blue, green, red):
-  //MISSING: two more serializers for the green and blue tmds signals.
   tmds_serializer red_ser(
       .clk_pixel_in(clk_pixel),
       .clk_5x_in(clk_5x),

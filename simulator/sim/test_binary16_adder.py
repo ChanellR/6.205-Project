@@ -11,12 +11,15 @@ from cocotb.utils import get_sim_time as gst
 from cocotb.runner import get_runner
 import numpy as np
 
+def rep(val):
+    return eval(f"0b{float32_to_binary16(val).view(np.uint16):016b}")
+
 def float32_to_binary16(val):
-    """Convert a 32-bit floating point number to a 32-bit binary number."""
+    """Convert a 32-bit floating point number to a binary16 value."""
     return np.float16(val)
 
 def half(val):
-    """Convert a 16-bit binary number to a half-precision floating point number."""
+    """Convert a binary16 number to a floating point number."""
     sign = (val >> 15) & 0x1
     exponent = (val >> 10) & 0x1F
     fraction = val & 0x3FF
@@ -34,6 +37,9 @@ def half(val):
     else:
         return (-1)**sign * 2**(exponent - 15) * (1 + fraction / 1024)
     
+def float_to_binary16_int_rep(val):
+    return eval(f"0b{float32_to_binary16(val).view(np.uint16):016b}")
+
 MODULE = "binary16_adder"
 PARAMETERS = {}
 SOURCES = [f"{MODULE}.sv"]
@@ -50,25 +56,50 @@ async def test(dut):
     
     test_vectors = []
 
-    for _ in range(10):
+    for _ in range(5):
         a = float32_to_binary16(random.uniform(-10.0, 10.0))
         b = float32_to_binary16(random.uniform(-10.0, 10.0))
+        # a = float32_to_binary16(3.1)
+        # b = float32_to_binary16(2.5)
         a_rep = eval(f"0b{a.view(np.uint16):016b}")
         b_rep = eval(f"0b{b.view(np.uint16):016b}")
         expected_sum = a + b
+        dut._log.info(f"a={hex(a.view(np.uint16))}, b={hex(b.view(np.uint16))}, res={hex(expected_sum.view(np.uint16))}")
         test_vectors.append((a_rep, b_rep, expected_sum))
 
+    # New input after every completion
+    # for a, b, expected_sum in test_vectors:
+    #     dut.a.value = int(a)
+    #     dut.b.value = int(b)
+    #     dut.data_valid_in.value = 1
+    #     await ClockCycles(dut.clk_in, 1)
+    #     dut.data_valid_in.value = 0
+    #     await RisingEdge(dut.data_valid_out)
+    #     value = dut.result.value
+    #     print(f"a={half(a)}, b={half(b)}: expected {expected_sum}, got {value,half(value)}")
+    # await ClockCycles(dut.clk_in, 3)
+
+    outputs = []
+    # New inputs every clock cycle
+    dut.data_valid_in.value = 1
     for a, b, expected_sum in test_vectors:
         dut.a.value = int(a)
         dut.b.value = int(b)
-        dut.data_valid_in.value = 1
         await ClockCycles(dut.clk_in, 1)
-        dut.data_valid_in.value = 0
-        await RisingEdge(dut.data_valid_out)
-        value = dut.result.value
-        print(f"a={half(a)}, b={half(b)}: expected {expected_sum}, got {value,half(value)}")
-
-    await ClockCycles(dut.clk_in, 4)
+        if dut.data_valid_out.value == 1:
+            value = dut.result.value
+            outputs.append(value)
+        dut._log.info(f"a={half(a)}, b={half(b)}: expected {float32_to_binary16(expected_sum).view(np.uint16):016b}, {expected_sum}")
+    
+    dut.data_valid_in.value = 0
+    for _ in range(6):
+        await ClockCycles(dut.clk_in, 1)
+        if dut.data_valid_out.value == 1:
+            value = dut.result.value
+            outputs.append(value)
+            
+    await ClockCycles(dut.clk_in, len(test_vectors) + 6 + 3)
+    dut._log.info(f"Outputs: {[(half(o), o) for o in outputs]}")
     
 def test_runner():
     hdl_toplevel_lang = os.getenv("HDL_TOPLEVEL_LANG", "verilog")

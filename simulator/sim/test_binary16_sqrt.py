@@ -6,9 +6,12 @@ from math import log
 import logging
 from pathlib import Path
 from cocotb.clock import Clock
+import cocotb.simulator
 from cocotb.triggers import Timer, ClockCycles, RisingEdge, FallingEdge, ReadOnly, with_timeout
 from cocotb.utils import get_sim_time as gst
 from cocotb.runner import get_runner
+from cocotb.types import LogicArray
+import cocotb
 import numpy as np
 
 def float32_to_binary16(val):
@@ -48,12 +51,14 @@ async def test(dut):
     dut.rst.value = 0
     
     test_vectors = []
-
+    powers = [] # [2**i for i in range(0, 5)] 
+    
     dut._log.info("Generating test vectors...")
-    for n in range(20):
-        n = float32_to_binary16(random.uniform(0, 500.0))
+    # for n in powers + [random.uniform(0, 500.0) for _ in range(8)]:
+    for n in [2.0]:
+        # n = float32_to_binary16(random.uniform(0, 500.0))
         # n = float32_to_binary16(400.75)
-        # n = float32_to_binary16(n)
+        n = float32_to_binary16(n)
         n_rep = eval(f"0b{n.view(np.uint16):016b}")
 
         n_mantissa = n_rep & 0x3FF | 0x400
@@ -65,16 +70,61 @@ async def test(dut):
         dut._log.info(f"n: {n.view(np.uint16):016b},expected: {expected.view(np.uint16):016b}, mantissa_sqrt: {mantissa_sqrt:011b}")
         test_vectors.append((n_rep, expected))
         
-    for n, expected in test_vectors:
-        dut.n.value = int(n)
-        dut.data_valid_in.value = 1
-        await ClockCycles(dut.clk_in, 1)
-        dut.data_valid_in.value = 0
-        await RisingEdge(dut.data_valid_out)
-        value = dut.result.value
-        dut._log.info(f"n={half(n)}, expected {expected}, got {value,half(value)}")
+    # for n, expected in test_vectors:
+    #     dut.n.value = int(n)
+    #     dut.data_valid_in.value = 1
+    #     await ClockCycles(dut.clk_in, 1)
+    #     dut.data_valid_in.value = 0
+    #     await RisingEdge(dut.data_valid_out)
+    #     await Timer(1, 'ns')
+    #     value = dut.result.value
+    #     dut._log.info(f"n={half(n)}, expected {expected}, got {value,half(value)}")
         
-    await ClockCycles(dut.clk_in, 3)
+    # await ClockCycles(dut.clk_in, 3)
+    
+    
+    # for n, expected in test_vectors:
+    #     dut.n.value = int(n)
+    #     dut.data_valid_in.value = 1
+    #     await ClockCycles(dut.clk_in, 1)
+    #     dut.data_valid_in.value = 0
+    #     for cycle in range(0, 13):
+    #         await Timer(1, 'ns')
+    #         d_val = (dut.d.value & (0x1FFFFF << 21 * cycle)) >> 21 * cycle
+    #         x_val = (dut.x.value & (0x3FFFFF << 22 * cycle)) >> 22 * cycle
+    #         c_val = (dut.c.value & (0x3FFFFF << 22 * cycle)) >> 22 * cycle
+    #         # dut._log.info(f"{cycle}: d={d_val}, x={x_val}, c={c_val}")
+    #         if dut.data_valid_out.value == 1:
+    #             value = dut.result.value
+    #             dut._log.info(f"n={half(n)}, expected {expected}, got {value,half(value)}")
+    #             break
+    #         await ClockCycles(dut.clk_in, 1)
+            
+        # await RisingEdge(dut.data_valid_out)
+        # value = dut.result.value
+        # dut._log.info(f"n={half(n)}, expected {expected}, got {value,half(value)}")
+        
+    outputs = []
+    # New inputs every clock cycle
+    dut.data_valid_in.value = 1
+    for n, expected_sum in test_vectors:
+        dut.n.value = int(n)
+        # dut.b.value = int(b)
+        await ClockCycles(dut.clk_in, 1)
+        if dut.data_valid_out.value == 1:
+            value = dut.result.value
+            outputs.append(value)
+        dut._log.info(f"a={half(n)}, expected {expected_sum}")
+    
+    dut.data_valid_in.value = 0
+    for _ in range(13):
+        await ClockCycles(dut.clk_in, 1)
+        if dut.data_valid_out.value == 1:
+            value = dut.result.value
+            outputs.append(value)
+            
+    # await ClockCycles(dut.clk_in, len(test_vectors) + 12 + 3)
+    dut._log.info(f"Outputs: {[(half(o), o) for o in outputs]}")
 
     
 def test_runner():

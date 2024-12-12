@@ -197,6 +197,10 @@ class SPH_Engine:
             # Then, calculate pressure forces and update particle positions
             for i in range(len(self.particles)):
                 self.pressure_forces[i] = self.pressure_force(i)
+                
+            # These must be seperated, because you can't update the 
+            # position of a particle while calculating the pressure forces
+            for i in range(len(self.particles)):
                 self.particles[i] = self.update_particle(i)
                 
         else:          
