@@ -180,7 +180,7 @@ def render_runner():
     sys.path.append(str(proj_path / "sim" / "model"))
 
     sources = [proj_path / "hdl" / "render.sv"]
-    sources += [proj_path / "hdl" / "top_level_test.sv"]
+    sources += [proj_path / "hdl" / "top_level.sv"]
     sources += [proj_path / "hdl" / "rasterizer.sv"]
     sources += [proj_path / "hdl" / "projector.sv"]
     sources += [proj_path / "hdl" / "painter.sv"]
@@ -205,7 +205,7 @@ def render_runner():
     runner = get_runner(sim)
     runner.build(
         sources=sources,
-        hdl_toplevel="top_level_test",
+        hdl_toplevel="top_level",
         always=True,
         build_args=build_test_args,
         parameters = {},
@@ -214,7 +214,7 @@ def render_runner():
     )
     run_test_args = []
     runner.test(
-        hdl_toplevel="top_level_test",
+        hdl_toplevel="top_level",
         test_module="test_top_level",
         test_args=run_test_args,
         waves=True
