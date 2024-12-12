@@ -17,7 +17,9 @@ rendering/sim/__pycache__
 rendering/sim/sim_build
 rendering/.Xil
 
-integration
+# integration
 integration/sim/__pycache__
 integration/sim/sim_build
 integration/.Xil
+integration/ip/blk_mem_gen_0/ip
+integration/obj/*
