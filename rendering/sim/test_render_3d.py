@@ -19,7 +19,7 @@ def float_to_binary_float16(float_num):
     # Convert the 16-bit float to its binary representation
     # np.float16() returns a numpy scalar, so we need to convert it to a binary string
     binary_rep = format(float16_value.view(np.uint16), '016b')
-    print(float_num, binary_rep)
+    # print(float_num, binary_rep)
     return int(binary_rep, 2)
 
 # Example usage
@@ -36,15 +36,15 @@ async def reset(rst,clk):
     await ClockCycles(clk,2)
 
 async def send_center(dut, x, y, z, radius): 
-    print("SENDING")
-    await RisingEdge(dut.clk_100mhz)
-    dut.send_render.value = 1 
+    # print("SENDING")
+    await RisingEdge(dut.clk_in)
+    dut.data_valid_in.value = 1 
     dut.f_x_in.value = x
     dut.f_y_in.value = y
     dut.f_z_in.value = z
-    await RisingEdge(dut.clk_100mhz) 
-    print("DONE")
-    dut.send_render.value = 0 
+    await RisingEdge(dut.clk_in) 
+    # print("DONE")
+    dut.data_valid_in.value = 0 
 
 def bin16_to_int(bin16):
     # Ensure the binary string is exactly 16 bits
@@ -62,12 +62,17 @@ def bin16_to_int(bin16):
 
 async def check_pixels(dut, im_output): 
     while True: 
-        await RisingEdge(dut.clk_100mhz)
-        if(dut.new_pixel_out.value == 1):
-            print(bin16_to_int(dut.rendering_inst.rasterizer_inst.depth_out), "COLOR")
-            im_output.putpixel((dut.rendering_inst.rasterizer_hcount_out.value,dut.rendering_inst.rasterizer_vcount_out.value),(0, 0, bin16_to_int(dut.rendering_inst.rasterizer_inst.depth_out)*40))
-            print(dut.rendering_inst.rasterizer_hcount_out.value,dut.rendering_inst.rasterizer_vcount_out.value)
-            print("PIXEL", dut.rendering_inst.rasterizer_hcount_out.value, dut.rendering_inst.rasterizer_vcount_out.value)
+        await RisingEdge(dut.clk_in)
+        if(dut.full_out.value == 1):
+            # print(bin16_to_int(dut.rendering_inst.rasterizer_inst.depth_out), "COLOR")
+            addr = dut.render_addr_out.value
+            y = int(int(str(addr),2) / 320)
+            x = addr % 320 
+            # print(x)
+            # print(y)
+            im_output.putpixel((x,y),(0, 0, 200))
+            # print(x,y)
+            print("PIXEL", x, y)
 
 async def send_data(dut, n): 
     # await send_center(dut, float_to_binary_float16(-7.5), float_to_binary_float16(7.5), float_to_binary_float16(random.uniform(4,8)))
@@ -86,11 +91,13 @@ async def send_cube(dut, n):
     # await send_center(dut, float_to_binary_float16(-7), float_to_binary_float16(-7), float_to_binary_float16(random.uniform(4,8)))
     # await send_center(dut, float_to_binary_float16(0), float_to_binary_float16(0), float_to_binary_float16(0), float_to_binary_float16(random.uniform(4,8)))
     for i in range (len(points)): 
-        
+        while dut.full_out.value == 1:
+            await RisingEdge(dut.clk_in)
+        await RisingEdge(dut.clk_in)
         center_x = float_to_binary_float16(points[i][0])
         center_y = float_to_binary_float16(points[i][1])
         await send_center(dut, center_x, center_y, float_to_binary_float16(points[i][2]), float_to_binary_float16(0))
-        await RisingEdge(dut.render_ready)
+        
 
 def sort_points_by_z(points):
   """
@@ -143,14 +150,14 @@ def generate_cube_points_edge(num_points_per_edge=50, side_length=2):
 @cocotb.test()
 async def test_painter(dut):
     """cocotb test for painter module"""
-    cocotb.start_soon(Clock(dut.clk_100mhz, 10, units="ns").start())
+    cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
     im_output = Image.new('RGB',(320,180))
-    cocotb.start_soon(check_pixels(dut, im_output))
+    #  cocotb.start_soon(check_pixels(dut, im_output))
 
-
-    await reset(dut.sys_rst, dut.clk_100mhz)
-    await send_cube(dut, 480)
+    await reset(dut.rst_in, dut.clk_in)
+    # await send_cube(dut, 24) 
     # await send_center(dut, float_to_binary_float16(-2), float_to_binary_float16(3), float_to_binary_float16(3), float_to_binary_float16(1))
+    await send_center(dut, float_to_binary_float16(-3), float_to_binary_float16(3), float_to_binary_float16(2), float_to_binary_float16(1))
     # await send_center(dut, 0b0100110000000000, 0b0100110000000000, 0b0)
     # await send_center(dut, 20, 30, 6)
     
@@ -165,9 +172,9 @@ async def test_painter(dut):
     # # await RisingEdge(dut.ready_out)
     # # await send_center(dut, 70, 70, 4)
 
-    await ClockCycles(dut.clk_100mhz, 200)
-    # await Timer(40, "ms")
-    im_output.save('output_TEST_TOP_LEVEL_FULL.png','PNG')
+    await ClockCycles(dut.clk_in, 200)
+    # await Timer(4, "ms")
+    im_output.save('output_TEST_TOP_LEVEL_PARA.png','PNG')
 
 
 def render_runner():
@@ -179,9 +186,10 @@ def render_runner():
     proj_path = Path(__file__).resolve().parent.parent
     sys.path.append(str(proj_path / "sim" / "model"))
 
-    sources = [proj_path / "hdl" / "render.sv"]
-    sources += [proj_path / "hdl" / "top_level_test.sv"]
+    sources = [proj_path / "hdl" / "render_3d.sv"]
     sources += [proj_path / "hdl" / "rasterizer.sv"]
+    sources += [proj_path / "hdl" / "arbiter.sv"]
+    sources += [proj_path / "hdl" / "bus_driver.sv"]
     sources += [proj_path / "hdl" / "projector.sv"]
     sources += [proj_path / "hdl" / "painter.sv"]
     sources += [proj_path / "hdl" / "pixel_manager.sv"]
@@ -198,6 +206,10 @@ def render_runner():
     sources += [proj_path / "hdl" / "binary16_multi.sv"]
     sources += [proj_path / "hdl" / "binary16_div_pipelined.sv"]
     sources += [proj_path / "hdl" / "pipelined_mvp.sv"]
+    sources += [proj_path / "hdl" / "fifo.sv"]
+    sources += [proj_path / "hdl" / "router.sv"]
+    sources += [proj_path / "hdl" / "depth_buffer.sv"]
+    sources += [proj_path / "hdl" / "xilinx_true_dual_port_read_first_2_clock_ram.v"]
 
     build_test_args = ["-Wall"]
 
@@ -205,7 +217,7 @@ def render_runner():
     runner = get_runner(sim)
     runner.build(
         sources=sources,
-        hdl_toplevel="top_level_test",
+        hdl_toplevel="render_3d",
         always=True,
         build_args=build_test_args,
         parameters = {},
@@ -214,8 +226,8 @@ def render_runner():
     )
     run_test_args = []
     runner.test(
-        hdl_toplevel="top_level_test",
-        test_module="test_top_level",
+        hdl_toplevel="render_3d",
+        test_module="test_render_3d",
         test_args=run_test_args,
         waves=True
     )

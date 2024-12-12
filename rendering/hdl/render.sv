@@ -28,6 +28,12 @@ module render
   logic [10:0] rasterizer_hcount_out;
   logic [9:0] rasterizer_vcount_out;
   logic rasterizer_new_pixel_out; 
+  logic [31:0] rasterizer_addr; 
+
+  logic [15:0] radius; 
+  logic [10:0] center_hcount;
+  logic [9:0] center_vcount;
+  logic [15:0] center_depth; 
 
   logic projector_ready; 
   logic rasterizer_ready; 
@@ -47,10 +53,14 @@ module render
     .f_z_in(f_z_in), 
     .data_valid_in(data_valid_in), 
     .rasterizer_ready(rasterizer_ready),
-    .f_center_x_pos(f_center_x_pos), 
-    .f_center_y_pos(f_center_y_pos), 
-    .f_center_depth(f_center_depth), 
-    .f_radius(f_radius), 
+    // .f_center_x_pos(f_center_x_pos), 
+    // .f_center_y_pos(f_center_y_pos), 
+    // .f_center_depth(f_center_depth), 
+    // .f_radius(f_radius), 
+    .int_radius(radius), 
+    .hcount_out(center_hcount), 
+    .vcount_out(center_vcount), 
+    .depth_out(center_depth),
     .data_valid_out(new_center_valid), 
     .ready_out(projector_ready)
   );
@@ -58,13 +68,18 @@ module render
   rasterizer rasterizer_inst (
     .clk_in(clk_in),
     .rst_in(rst_in),
-    .f_center_x_pos(f_center_x_pos),
-    .f_center_y_pos(f_center_y_pos),
-    .f_center_depth(f_center_depth), 
-    .f_radius(f_radius), 
+    // .f_center_x_pos(f_center_x_pos),
+    // .f_center_y_pos(f_center_y_pos),
+    // .f_center_depth(f_center_depth), 
+    // .radius(f_radius), 
+    .radius_in(radius), 
+    .hcount_in(center_hcount), 
+    .vcount_in(center_vcount), 
+    .depth_in(center_depth),
     .data_valid_in(new_center_valid), 
     .hcount_out(rasterizer_hcount_out), 
     .vcount_out(rasterizer_vcount_out), 
+    .addr_out(rasterizer_addr),
     .new_pixel_out(rasterizer_new_pixel_out), 
     .ready_out(rasterizer_ready)
   );
@@ -73,8 +88,7 @@ module render
     .clk_in(clk_in),
     .rst_in(rst_in), 
     .data_valid_in(rasterizer_new_pixel_out),
-    .hcount_in(rasterizer_hcount_out), 
-    .vcount_in(rasterizer_vcount_out), 
+    .addr_in(rasterizer_addr),
     .addr_out(addr_out), 
     .data_valid_out(render_new_pixel_out), 
     .color_out(render_color_out)
@@ -82,7 +96,7 @@ module render
 
   always_ff @(posedge clk_in) begin 
     if(rst_in) begin 
-      render_ready <= 0; 
+      render_ready <= 0;
     end else begin 
       render_ready <= projector_ready; 
     end 

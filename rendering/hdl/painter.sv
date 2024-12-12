@@ -7,6 +7,7 @@ module painter (
   input wire [9:0] vcount_in, 
   output logic [10:0] hcount_out, 
   output logic [9:0] vcount_out, 
+  output logic [31:0] addr_out, 
   output logic data_valid_out,
   output logic ready_out
 );
@@ -120,6 +121,7 @@ module painter (
                 data_valid_out <= 1; 
                 hcount_out <= current_hcount; 
                 vcount_out <= current_vcount; 
+                addr_out <= current_hcount + (current_vcount * 320); 
               end
 
               if(current_hcount <= end_hcount - 1) begin 
