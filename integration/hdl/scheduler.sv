@@ -221,36 +221,6 @@ module scheduler #(
                     cycle_counter <= cycle_counter + 1;
                     last_state <= state;
                 end
-                // FORCES: begin
-                //     next_sum <= 0;
-                //     valid_task <= 0;
-                //     if (cycle_counter == 2) begin
-                //         x_i <= mem_in;
-                //         P_i <= pressure;
-                //     end else if (cycle_counter > 2) begin
-                //         task_data <= {x_i, mem_in, P_i, pressure, density_reciprocal}; // x_i, x_j
-                //         task_type <= FORCE;
-                //         valid_task <= 1;
-                //         if (cycle_counter == particle_count + 3) begin
-                //             state <= PART_DONE;
-                //             valid_task <= 0;
-                //         end
-                //     end 
-
-                //     if (cycle_counter < particle_count) begin
-                //         addr_out <= j; // x_1, v_1, x_2, whether to make each dim a different entry
-                //         req_index <= j;
-                //         j <= j + 1;
-                //     end else begin
-                //         // cycle_counter <= 0;
-                //         addr_out <= 0;
-                //         j <= 0;
-                //         req_index <= 0;
-                //     end
-
-                //     cycle_counter <= cycle_counter + 1;
-                //     last_state <= state;
-                // end
                 PART_DONE: begin
                     if (done_accumulating) begin
 
