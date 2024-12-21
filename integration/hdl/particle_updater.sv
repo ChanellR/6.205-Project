@@ -90,12 +90,6 @@ module particle_updater #(
             // );
         end
     endgenerate
-    
-    // Is |value1| > |value2| ?
-    // function logic out_of_bounds(input logic [16-1:0] pos, input logic [16-1:0] bound);
-    //     out_of_bounds = (pos[14:10] > bound[14:10]) | ((pos[14:10] == bound[14:10]) & (pos[9:0] > bound[9:0]));
-    // endfunction
-
 
     enum {IDLE, GRAVITY, FETCH, ACCEL, DELTA_VEL, VELOCITY, DELTA_POS, POSITION, HANDLE_COLLISION, DAMPEN, WRITE_VEL, WRITE_POS, WRITEBACK} state;
 
@@ -182,18 +176,6 @@ module particle_updater #(
                         state <= DELTA_VEL;
                     end
                 end
-                // GRAVITY: begin
-                //     // add gravitational acceleration
-                //     mul_valid_in <= 0;
-                //     if (&mul_valid_out) begin
-                //         for (int i = 0; i < DIMS; i = i+1) begin
-                //             adder_a[i] <= mul_result[i]; // this is f_i / rho
-                //             adder_b[i] <= (i == 0) ? gravitational_constant : 16'b0; // this is g
-                //             adder_valid_in[i] <= 1;
-                //         end
-                //         state <= DELTA_VEL;
-                //     end
-                // end
                 DELTA_VEL: begin
                     mul_valid_in <= 0;
                     if (&mul_valid_out) begin
@@ -206,21 +188,6 @@ module particle_updater #(
                         state <= VELOCITY;
                     end
                 end
-                // DELTA_VEL: begin
-                //     adder_valid_in <= 0;
-                //     // if (&mul_valid_in) begin
-                //     //     particle_position <= mem_in; // read position
-                //     // end
-                //     if (&adder_valid_out) begin
-                //         // calculate acceleration
-                //         for (int i = 0; i < DIMS; i = i + 1) begin
-                //             mul_a[i] <= adder_result[i]; // this is f_i / rho + g
-                //             mul_b[i] <= TIME_STEP; // this is dt
-                //             mul_valid_in[i] <= 1;
-                //         end
-                //         state <= VELOCITY;
-                //     end
-                // end
                 VELOCITY: begin 
                     mul_valid_in <= 0;
                     if (&mul_valid_out) begin
@@ -296,21 +263,6 @@ module particle_updater #(
                     mem_write_enable <= 1;
                     state <= IDLE;
                 end
-                // TEMPORARILY DISABLING WRITES BACK TO THE PARTICLE BUFFER
-                // WRITE_VEL: begin
-                //     // write velocity back to memory
-                //     addr_out <= (current_particle_idx * 2) + 1;
-                //     mem_write_enable <= 1;
-                //     // mem_enable <= 1;
-                //     mem_out <= particle_velocity;
-                //     state <= WRITE_POS;
-                // end
-                // WRITE_POS: begin
-                //     // write position back to memory
-                //     addr_out <= (current_particle_idx * 2);
-                //     mem_out <= particle_position;
-                //     state <= IDLE;
-                // end
             endcase
         end
     end
