@@ -38,8 +38,6 @@ module accum_storage #(
     * An addition takes 6 cycles, but it is fully pipelined, so it can be written to constantly.
     */
 
-    // LOOKOUT FOR THIS MODULE, MIGHT BE FUCKED UP
-
     /* Accumulation Portion */
     logic [DIMS-1:0] [16-1:0] input_terms;  // density: [16'b0, rho_i_term], force [f_i_x_term, f_i_y_term]
     assign input_terms = {data_in};
