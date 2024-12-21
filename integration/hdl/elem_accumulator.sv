@@ -25,55 +25,11 @@ module elem_accumulator #(
     * An addition takes 6 cycles, but it is fully pipelined, so it can be written to constantly.
     */
 
-    // LOOKOUT FOR THIS MODULE, MIGHT BE FUCKED UP
-
     // This module can listen to the dispatcher to know when there are no more terms in flight
     // and then it can once completed calculating, signal the scheduler that it is done.
 
     logic finished;
     assign finished = (queue_size == 1) && !terms_in_flight && !adder_busy && !adder_valid_in && !data_valid_in;
-    // assign finished = (queue_size == 1) && stop && !adder_busy && !adder_valid_in && !data_valid_in;
-
-    /* Storage Portion */
-
-    // logic [PARTICLE_COUNT-1:0] [15:0] density_reciprocals, density_reciprocal_pipe;
-    // logic [PARTICLE_COUNT-1:0] [15:0] pressures, pressure_pipe;
-
-    // always_ff @(posedge clk_in) begin
-    //     if (rst) begin
-    //         done_accumulating <= 0;
-    //         density_reciprocals <= 0;
-    //         density_reciprocal_pipe <= 0;
-    //         pressures <= 0;
-    //         pressure_pipe <= 0;
-    //         data_out <= 0;
-    //         data_valid_out <= 0;
-    //     end else begin
-            
-    //         data_valid_out <= 0;
-    //         if (finished) begin
-    //             if (is_density_task) begin // store properties
-    //                 density_reciprocals[main_index] <= term_queue[0];
-    //                 pressures[main_index] <= term_queue[0];
-    //             end else begin
-    //                 data_out <= {term_queue[0], density_reciprocals[main_index]};
-    //                 data_valid_out <= 1;
-    //             end
-    //             done_accumulating <= 1;
-    //         end else begin
-    //             done_accumulating <= 0;
-    //         end
-
-    //         // scheduler data requests
-    //         density_reciprocal_pipe <= density_reciprocals[req_index];
-    //         density_reciprocal <= density_reciprocal_pipe;
-    //         pressure_pipe <= pressures[req_index];
-    //         pressure <= pressure_pipe;
-
-    //     end
-    // end
-
-    /* Accumulation Portion */
 
     logic [MAX_QUEUE_SIZE-1:0] [15:0] term_queue;
     logic [$clog2(MAX_QUEUE_SIZE)-1:0] queue_size;
